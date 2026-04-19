@@ -12127,6 +12127,9 @@ async function resolveStaffRoleLabel(member: TeamMemberSnapshot, language: UiLan
       .find((value) => value && value.trim().length > 0) ?? "";
   const key = normalizeLookupKey(member.agentId);
 
+  const explicit = `${explicitRole} ${explicitMission}`.trim();
+  if (explicit) return explicit;
+
   if (
     key === "monkey" &&
     (normalized.includes("youtube-to-article") ||
@@ -12199,20 +12202,6 @@ async function resolveStaffRoleLabel(member: TeamMemberSnapshot, language: UiLan
 
   if (key === "codex" || normalized.includes("codex")) {
     return pickUiText(language, "Coding automation", "自动化编码执行");
-  }
-
-  const explicit = `${explicitRole} ${explicitMission}`.trim();
-  if (
-    explicit &&
-    (normalizeEvidenceText(explicit).includes("youtube") || normalizeEvidenceText(explicit).includes("article"))
-  ) {
-    return pickUiText(language, "YouTube to article writing", "YouTube 视频转长文");
-  }
-  if (explicit && (normalizeEvidenceText(explicit).includes("control-center") || explicit.includes("控制中心"))) {
-    return pickUiText(language, "Control Center delivery", "控制中心开发与交付");
-  }
-  if (explicit && (normalizeEvidenceText(explicit).includes("creator") || explicit.includes("创作"))) {
-    return pickUiText(language, "High-value content creation", "高价值内容创作");
   }
 
   return pickUiText(language, "Role not defined in workspace", "工作区未写明职责");
@@ -16043,6 +16032,7 @@ function renderAvatarEditorScript(language: UiLanguage = "zh", importMutationEna
     recrop: pickUiText(language, "Edit", "编辑"),
     loading: pickUiText(language, "Loading…", "加载中…"),
     emptyUploads: pickUiText(language, "No uploaded avatars yet.", "还没有上传头像。"),
+    uploadSizeHint: pickUiText(language, "Recommended: 512×512px, square", "建议 512×512px 正方形"),
     chooseFile: pickUiText(language, "Choose file", "选择文件"),
     saving: pickUiText(language, "Saving…", "保存中…"),
     save: pickUiText(language, "Save", "保存"),
@@ -16495,8 +16485,9 @@ function renderAvatarEditorScript(language: UiLanguage = "zh", importMutationEna
       panelBody.innerHTML = \`
         <div class="avatar-upload-row">
           <button type="button" class="btn avatar-upload-btn" data-action="upload">\${esc(L.upload)}</button>
-          <div class="meta" data-upload-status>\${esc(L.loading)}</div>
+          <span class="meta" style="font-size:11px;">\${esc(L.uploadSizeHint)}</span>
         </div>
+        <div class="meta" data-upload-status>\${esc(L.emptyUploads)}</div>
         <div class="avatar-upload-list" data-upload-list></div>\`;
 
       const status = q('[data-upload-status]', panelBody);

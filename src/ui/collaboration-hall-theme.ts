@@ -1386,7 +1386,7 @@ export function renderCollaborationHallTheme(): string {
     .hall-action-menu-panel {
       position: absolute;
       left: 0;
-      bottom: calc(100% + 8px);
+      top: calc(100% + 8px);
       display: grid;
       gap: 6px;
       min-width: 180px;
@@ -1659,6 +1659,409 @@ export function renderCollaborationHallTheme(): string {
           0 16px 40px rgba(17, 43, 68, 0.07),
           inset 0 1px 0 rgba(255,255,255,0.75) !important;
       }
+    }
+    html[data-theme="dark"] .collaboration-hall-card {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+    }
+    html[data-theme="dark"] .hall-room-label,
+    html[data-theme="dark"] .hall-toolbar-copy p {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-toolbar-copy h2 {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-toolbar-headline {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-toolbar-meta-note {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-stage-pill,
+    html[data-theme="dark"] .hall-kind-pill {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-member-pill {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-member-pill--typing {
+      border-color: rgba(92, 176, 245, 0.32);
+      box-shadow: 0 0 0 4px rgba(92, 176, 245, 0.10);
+    }
+    html[data-theme="dark"] .hall-member-pill--executing,
+    html[data-theme="dark"] .hall-member-pill--reviewing {
+      border-color: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-member-pill--queued {
+      border-color: rgba(240, 160, 45, 0.24);
+      background: rgba(240, 160, 45, 0.08);
+    }
+    html[data-theme="dark"] .hall-member-status-dot {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.22);
+    }
+    html[data-theme="dark"] .hall-agent-avatar,
+    html[data-theme="dark"] .hall-pixel-avatar {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .hall-member-avatar,
+    html[data-theme="dark"] .hall-task-card-avatar,
+    html[data-theme="dark"] .hall-message-avatar,
+    html[data-theme="dark"] .hall-mention-avatar {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+      border-color: rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .hall-pane {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+    }
+    html[data-theme="dark"] .hall-pane--thread {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    html[data-theme="dark"] .hall-pane--context {
+      background: rgba(10, 12, 18, 0.96);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+    }
+    html[data-theme="dark"] .hall-pane-head h3,
+    html[data-theme="dark"] .hall-thread-head h3 {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-thread-label {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-thread-subtitle {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-pane-head .meta,
+    html[data-theme="dark"] .hall-thread-head .meta {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-task-card {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-task-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.10);
+    }
+    html[data-theme="dark"] .hall-task-card.is-selected {
+      border-color: rgba(92, 176, 245, 0.32);
+      background: rgba(92, 176, 245, 0.08);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    }
+    html[data-theme="dark"] .hall-task-card.is-selected::before {
+      background: linear-gradient(180deg, rgba(92, 176, 245, 0.94), rgba(76, 163, 237, 0.92));
+    }
+    html[data-theme="dark"] .hall-task-title {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-task-timestamp {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-task-preview {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-task-meta,
+    html[data-theme="dark"] .hall-message-meta,
+    html[data-theme="dark"] .hall-detail-meta {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-card {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .hall-decision-label {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-inline-summary {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-summary--compact {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-meta-line-item {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-body {
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-decision-row strong {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-row span {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-helper {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-decision-queue-item {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-queue-item strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-queue-item span {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-order-planner {
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-order-planner-head strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-order-planner-head span {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-order-item {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-order-item-copy strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-order-item-copy span {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-order-item-fields label {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-order-item-next {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-handoff-preview {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-handoff-preview strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-order-textarea,
+    html[data-theme="dark"] .hall-order-input {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-order-icon {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-order-icon--danger {
+      color: #f87171;
+    }
+    html[data-theme="dark"] .hall-order-empty {
+      border-color: rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    html[data-theme="dark"] .hall-order-available-label {
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-order-chip {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-typing-row {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-typing-dots i {
+      background: rgba(255, 255, 255, 0.48);
+    }
+    html[data-theme="dark"] .hall-thread-head {
+      background: rgba(10, 12, 18, 0.96);
+    }
+    html[data-theme="dark"] .hall-message-bubble {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-message-bubble {
+      background: rgba(92, 176, 245, 0.12);
+      border-color: rgba(92, 176, 245, 0.20);
+    }
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-message-avatar {
+      background: linear-gradient(180deg, rgba(92, 176, 245, 0.16), rgba(76, 163, 237, 0.08));
+    }
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-message-meta,
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-message-body,
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-message-author {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-message[data-author-type="operator"] .hall-kind-pill {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    html[data-theme="dark"] .hall-message[data-author-type="system"] .hall-message-bubble {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    html[data-theme="dark"] .hall-message-author {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-message-body {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-message-body code {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-message-body a {
+      color: var(--focus);
+    }
+    html[data-theme="dark"] .hall-md-mention {
+      border-color: rgba(92, 176, 245, 0.32);
+      background: rgba(92, 176, 245, 0.16);
+      color: var(--focus);
+    }
+    html[data-theme="dark"] .hall-message-body a.hall-md-image {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+    html[data-theme="dark"] .hall-md-img {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    html[data-theme="dark"] .hall-message-body blockquote {
+      border-left-color: rgba(92, 176, 245, 0.28);
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-md-pre {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-artifact-chip {
+      border-color: rgba(92, 176, 245, 0.20);
+      background: rgba(92, 176, 245, 0.10);
+      color: var(--focus);
+    }
+    html[data-theme="dark"] .hall-artifact-chip:hover {
+      background: rgba(92, 176, 245, 0.14);
+      border-color: rgba(92, 176, 245, 0.28);
+    }
+    html[data-theme="dark"] .hall-artifact-chip-kind {
+      background: rgba(255, 255, 255, 0.10);
+      color: var(--focus);
+    }
+    html[data-theme="dark"] .hall-composer-shell {
+      border-top-color: rgba(255, 255, 255, 0.08);
+      background: linear-gradient(180deg, rgba(10, 12, 18, 0), rgba(10, 12, 18, 0.88) 12%, rgba(10, 12, 18, 0.98));
+    }
+    html[data-theme="dark"] .hall-composer {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+    }
+    html[data-theme="dark"] .hall-composer textarea {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-button {
+      border-color: rgba(92, 176, 245, 0.34);
+      background: linear-gradient(180deg, rgba(92, 176, 245, 0.98), rgba(76, 163, 237, 0.98));
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+    }
+    html[data-theme="dark"] .hall-secondary-button {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-secondary-button:hover {
+      background: rgba(255, 255, 255, 0.10);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+    html[data-theme="dark"] .hall-secondary-button.is-active {
+      border-color: rgba(92, 176, 245, 0.42);
+      background: rgba(92, 176, 245, 0.14);
+      color: var(--focus);
+      box-shadow: 0 0 0 4px rgba(92, 176, 245, 0.10);
+    }
+    html[data-theme="dark"] .hall-context-toggle {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-context-toggle::before {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+    html[data-theme="dark"] .hall-context-toggle:hover {
+      background: rgba(255, 255, 255, 0.10);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+    html[data-theme="dark"] .hall-action-menu-panel {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(10, 12, 18, 0.98);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.36);
+    }
+    html[data-theme="dark"] .hall-menu-button {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-menu-button:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
+    html[data-theme="dark"] .hall-menu-button--danger {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.08);
+    }
+    html[data-theme="dark"] .hall-menu-button--danger:hover {
+      background: rgba(248, 113, 113, 0.14);
+    }
+    html[data-theme="dark"] .hall-mention-chip {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-flash {
+      color: var(--muted);
+      background: rgba(92, 176, 245, 0.10);
+      border-color: rgba(92, 176, 245, 0.18);
+    }
+    html[data-theme="dark"] .hall-detail-group {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .hall-detail-group h4 {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-empty {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-empty strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-empty-action {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+    html[data-theme="dark"] .hall-empty-action:hover {
+      background: rgba(255, 255, 255, 0.10);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.20);
+    }
+    html[data-theme="dark"] .hall-thread-link {
+      color: var(--focus);
+    }
+    html[data-theme="dark"] .hall-roster-copy strong {
+      color: var(--text);
+    }
+    html[data-theme="dark"] .hall-roster-copy span {
+      color: var(--muted);
     }
   `;
 }
