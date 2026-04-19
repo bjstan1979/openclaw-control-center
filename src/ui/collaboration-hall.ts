@@ -1327,6 +1327,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
         selectedTaskCardId = button.getAttribute('data-task-card-id') || '';
         selectedTaskProjectId = button.getAttribute('data-project-id') || '';
         selectedTaskId = button.getAttribute('data-task-id') || '';
+        lastRenderedThreadFingerprint = '';
         composerMode = 'reply';
         closeHandoffPanel();
         executionPlannerOpen = false;
@@ -1525,11 +1526,13 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     );
   };
 
+  let lastRenderedThreadFingerprint = '';
   const renderThread = (messages) => {
     if (!thread) return;
     const previousDistanceFromBottom = threadDistanceFromBottom();
     const shouldStickToBottom = threadAutoFollow || previousDistanceFromBottom <= threadFollowThresholdPx;
     if (!Array.isArray(messages) || messages.length === 0) {
+      lastRenderedThreadFingerprint = '';
       thread.innerHTML = '<div class="hall-empty hall-empty--chat">' +
         '<div class="hall-empty-hero">' + hallAvatarMarkup('Collaboration Hall', 'hall-empty-avatar') + '</div>' +
         '<strong>' + esc(textHallQuiet) + '</strong>' +
@@ -1634,6 +1637,14 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
       '</article>';
       return messageMarkup;
     }).join('');
+    const fingerprint = renderedMessages.length + ':' + messages.length + ':' + (messages[0]?.messageId || '') + ':' + (messages[messages.length - 1]?.messageId || '');
+    if (fingerprint === lastRenderedThreadFingerprint) {
+      if (shouldStickToBottom && thread.scrollHeight - thread.scrollTop - thread.clientHeight > 4) {
+        thread.scrollTop = thread.scrollHeight;
+      }
+      return;
+    }
+    lastRenderedThreadFingerprint = fingerprint;
     thread.innerHTML = renderedMessages;
     if (shouldStickToBottom) {
       thread.scrollTop = thread.scrollHeight;
