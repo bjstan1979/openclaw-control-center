@@ -1489,7 +1489,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
                     '<div class="hall-decision-inline-summary" title="' + esc(compactSummaryText || taskCard.title || '') + '">' + esc(compactSummaryText || taskCard.title || '') + '</div>' +
                     '<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">' + esc(isExpanded ? textHideDetails : textShowDetails) + '</button>' +
                   '</div>' +
-                  (summaryStats.length > 0
+                  (isExpanded && summaryStats.length > 0
                     ? '<div class="hall-decision-summary hall-decision-summary--compact">' +
                         summaryStats
                           .map((item) => '<span class="hall-decision-meta-line-item" title="' + esc(item) + '">' + esc(item) + '</span>')
@@ -3106,7 +3106,7 @@ function renderInitialDecisionPanel(
                   `<div class="hall-decision-inline-summary" title="${escapeHtml(compactSummaryText || selectedTaskCard.title || "")}">${escapeHtml(compactSummaryText || selectedTaskCard.title || "")}</div>` +
                   `<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">${escapeHtml(isExpanded ? pickUiText(language, "Hide details", "收起详情") : pickUiText(language, "Show details", "展开详情"))}</button>` +
                 `</div>` +
-                (summaryStats.length > 0
+                (isExpanded && summaryStats.length > 0
                   ? `<div class="hall-decision-summary hall-decision-summary--compact">${summaryStats
                     .map((item) => `<span class="hall-decision-meta-line-item" title="${escapeHtml(item)}">${escapeHtml(item)}</span>`)
                     .join("<span class=\"hall-decision-meta-sep\">·</span>")}</div>`
