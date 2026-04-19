@@ -635,6 +635,9 @@ export function renderCollaborationHallTheme(): string {
     .hall-decision-card.is-collapsed .hall-decision-helper {
       display: none;
     }
+    .hall-decision-card.is-collapsed .hall-decision-actions {
+      display: none;
+    }
     .hall-decision-row {
       display: grid;
       gap: 3px;
@@ -1079,6 +1082,22 @@ export function renderCollaborationHallTheme(): string {
       font-size: 13px;
       line-height: 1.58;
       color: #173346;
+    }
+    .hall-message-body h1,
+    .hall-message-body h2,
+    .hall-message-body h3 {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin: 6px 0 4px;
+    }
+    .hall-message-body h4,
+    .hall-message-body h5,
+    .hall-message-body h6 {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin: 4px 0 2px;
     }
     .hall-message-body > :first-child {
       margin-top: 0;
