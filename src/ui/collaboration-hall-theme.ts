@@ -356,8 +356,8 @@ export function renderCollaborationHallTheme(): string {
       min-width: 0;
     }
     .hall-thread-avatar {
-      width: 38px;
-      height: 38px;
+      width: 30px;
+      height: 30px;
       box-shadow: inset 0 0 0 1px rgba(15, 95, 150, 0.08);
     }
     .hall-thread-head-actions {
@@ -369,17 +369,17 @@ export function renderCollaborationHallTheme(): string {
     .hall-pane-head h3,
     .hall-thread-head h3 {
       margin: 0;
-      font-size: 15px;
+      font-size: 14px;
       letter-spacing: -0.02em;
       color: #142f42;
       white-space: nowrap;
     }
     .hall-thread-label {
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: #6b8294;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .hall-thread-subtitle {
       font-size: 12px;
@@ -953,7 +953,7 @@ export function renderCollaborationHallTheme(): string {
       position: sticky;
       top: 0;
       z-index: 3;
-      padding-bottom: 12px;
+      padding-bottom: 6px;
       margin-bottom: -2px;
       background: rgba(255,255,255,0.98);
       backdrop-filter: none;
@@ -1902,7 +1902,7 @@ export function renderCollaborationHallTheme(): string {
       background: rgba(255, 255, 255, 0.48);
     }
     html[data-theme="dark"] .hall-thread-head {
-      background: rgba(10, 12, 18, 0.96);
+      background: rgba(255, 255, 255, 0.05);
     }
     html[data-theme="dark"] .hall-message-bubble {
       border-color: rgba(255, 255, 255, 0.08);
