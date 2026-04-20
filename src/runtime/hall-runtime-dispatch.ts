@@ -364,7 +364,7 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
   const transcriptBlock = recentMessages.length > 0
     ? [
         "Recent shared thread transcript (oldest -> newest):",
-        ...recentMessages.map((message) => `- ${message.authorLabel}${!discussionMode && message.authorSemanticRole ? ` [${message.authorSemanticRole}]` : ""}: ${message.content}`),
+        ...recentMessages.map((message) => `- ${message.authorLabel}${!discussionMode && message.authorSemanticRole ? ` [${message.authorSemanticRole}]` : ""}: ${truncateForPrompt(message.content, 300)}`),
       ].join("\n")
     : "";
   const role = input.participant.semanticRole;
@@ -392,11 +392,11 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
   const directResponseIntent = isDirectResponseIntent(operatorIntent) ? operatorIntent : undefined;
   const commonBase = [
     `You are ${input.participant.displayName}, participating in the control-center Collaboration Hall.`,
-    `Task title: ${input.taskCard.title}`,
-    `Task description: ${input.taskCard.description}`,
+    `Task title: ${truncateForPrompt(input.taskCard.title, 120)}`,
+    `Task description: ${truncateForPrompt(input.taskCard.description, 300)}`,
     `Current hall stage: ${input.taskCard.stage}`,
-    input.taskCard.doneWhen ? `Current done_when: ${input.taskCard.doneWhen}` : "",
-    input.taskCard.decision ? `Current decision: ${input.taskCard.decision}` : "",
+    input.taskCard.doneWhen ? `Current done_when: ${truncateForPrompt(input.taskCard.doneWhen, 120)}` : "",
+    input.taskCard.decision ? `Current decision: ${truncateForPrompt(input.taskCard.decision, 200)}` : "",
     input.taskCard.currentOwnerLabel ? `Current owner: ${input.taskCard.currentOwnerLabel}` : "",
     recentMessages.length > 0 ? `Recent agent contributions already in thread: ${countRecentAgentContributors(recentMessages)}.` : "",
     transcriptBlock,
@@ -627,6 +627,12 @@ function normalizeHallIntentSourceText(text: string): string {
     .replace(/\bhttps?:\/\/\S+\.(?:html?|png|jpe?g|gif|webp|svg)(?:[?#]\S*)?/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function truncateForPrompt(value: string, maxChars: number): string {
+  const trimmed = (value || "").replace(/\s+/g, " ").trim();
+  if (trimmed.length <= maxChars) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxChars - 1)).trimEnd()}…`;
 }
 
 function looksLikeRepoInspectionRequest(text: string): boolean {
