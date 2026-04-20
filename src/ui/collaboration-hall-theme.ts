@@ -639,21 +639,46 @@ export function renderCollaborationHallTheme(): string {
       display: none;
     }
     .hall-decision-row {
-      display: grid;
-      gap: 3px;
-    }
-    .hall-decision-row strong {
-      font-size: 10px;
-      color: #5f7484;
-      text-transform: none;
-      letter-spacing: 0.01em;
-    }
-    .hall-decision-row span {
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
       font-size: 12px;
       line-height: 1.45;
+    }
+    .hall-decision-row strong {
+      flex-shrink: 0;
+      color: #5f7484;
+    }
+    .hall-decision-row span {
       color: #173346;
       word-break: break-word;
       white-space: normal;
+    }
+    .hall-decision-value {
+      overflow-wrap: break-word;
+    }
+    .hall-decision-value p,
+    .hall-decision-value ul,
+    .hall-decision-value ol {
+      margin: 0 0 4px;
+    }
+    .hall-decision-value ul,
+    .hall-decision-value ol {
+      padding-left: 18px;
+    }
+    .hall-decision-value li {
+      margin-bottom: 2px;
+    }
+    .hall-decision-value strong {
+      color: inherit;
+      font-weight: 600;
+    }
+    .hall-decision-value code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92em;
+      padding: 0.08rem 0.35rem;
+      border-radius: 8px;
+      background: rgba(17, 43, 68, 0.06);
     }
     .hall-decision-actions {
       display: flex;
@@ -1876,6 +1901,9 @@ export function renderCollaborationHallTheme(): string {
     }
     html[data-theme="dark"] .hall-decision-row span {
       color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-value code {
+      background: rgba(255, 255, 255, 0.06);
     }
     html[data-theme="dark"] .hall-decision-helper {
       color: var(--muted);
