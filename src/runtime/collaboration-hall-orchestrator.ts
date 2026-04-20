@@ -68,7 +68,9 @@ import {
 import { loadBestEffortAgentRoster } from "./agent-roster";
 import {
   canDispatchHallToRuntime,
+  classifyHallOperatorIntent as classifyHallOperatorIntentFromDispatch,
   dispatchHallRuntimeTurn,
+  type HallOperatorIntentType,
   type HallRuntimeChainDirective,
   type HallRuntimeDispatchResult,
 } from "./hall-runtime-dispatch";
@@ -973,24 +975,10 @@ function classifyHallOperatorIntent(content: string): HallOperatorIntent {
   const trimmed = content.trim();
   if (!trimmed) return "light_chat";
   if (isHallGreetingOnly(trimmed)) return "greeting";
-
-  const normalized = trimmed.toLowerCase();
-  const strongTaskSignal = [
-    /\b(build|fix|implement|create|design|plan|make|ship|debug|investigate|review|prototype|brainstorm|research|analyze|animate|visuali[sz]e)\b/i,
-    /(帮我|请帮|请你|麻烦|需要|我想|我想要|我想做|希望|制作|做一个|设计|策划|规划|分析|研究|实现|修|新增|创建|检查|排查|审核|产出|整理|写一个|准备|生成|可视化|动画|方案|创意|策略|发布|故事板|脚本)/,
-  ].some((pattern) => pattern.test(trimmed));
-  if (strongTaskSignal) return "task_request";
-
-  const discussionSignal = [
-    /[?？]/,
-    /\b(how|what|why|which|should|could|can|ideas?|advice|approach|direction|options?)\b/i,
-    /(如何|怎么|为什么|是否|要不要|应该|可以怎么|思路|建议|方向|想法|比较|评估|怎么做|做什么)/,
-  ].some((pattern) => pattern.test(trimmed));
-  if (discussionSignal) return "discussion_request";
-
-  if (normalized.length >= 18) return "discussion_request";
-  if (/[，。！？,.!?]/.test(trimmed) && trimmed.length >= 12) return "discussion_request";
-  return "light_chat";
+  const dispatchType = classifyHallOperatorIntentFromDispatch(trimmed);
+  if (dispatchType === "control_request" || dispatchType === "planning_request") return "task_request";
+  if (dispatchType === "direct_deliverable_request" || dispatchType === "repo_scan_request" || dispatchType === "review_request") return "task_request";
+  return "discussion_request";
 }
 
 function isHallGreetingOnly(content: string): boolean {
@@ -2126,7 +2114,10 @@ export async function recordHallTaskHandoff(
       doneWhen: handoff.doneWhen,
       plannedExecutionOrder: handoffMatchesQueue
         ? shiftExecutionQueueForOwner(taskCard, toParticipant.participantId)
-        : taskCard.plannedExecutionOrder,
+        : [
+            toParticipant.participantId,
+            ...taskCard.plannedExecutionOrder.filter((id) => id !== toParticipant.participantId),
+          ],
       plannedExecutionItems: handoffMatchesQueue
         ? shiftExecutionItemsForOwner(taskCard, toParticipant.participantId)
         : taskCard.plannedExecutionItems,
@@ -2363,7 +2354,9 @@ async function runHallDiscussion(
     const discussionTriggerMessage = cycleTriggerMessage ?? currentTriggerMessage;
     const spokenParticipantIds = new Set<string>();
     const explicitQueue = options.strictMentions && explicitTargets.length > 0 ? explicitTargets.slice() : [];
-    const maxDiscussionTurns = explicitQueue.length > 0 ? explicitQueue.length : 3;
+    const maxDiscussionTurns = explicitQueue.length > 0
+      ? explicitQueue.length
+      : resolveMaxDiscussionTurns(discussionTriggerMessage, context.hall.participants, mentionRouting.broadcastAll);
 
     for (let turn = 0; turn < maxDiscussionTurns; turn += 1) {
       const plannedParticipantIds = explicitQueue.length > 0
@@ -2489,7 +2482,7 @@ function determineDiscussionTurnParticipants(input: {
   const complement = pickComplementaryDiscussionParticipant(nonManagers, lead)
     ?? nonManagers[1];
 
-  if (explicitTargets.length > 0 && wantsConcreteDeliverable) {
+  if (explicitTargets.length > 0) {
     push(explicitTargets[0]);
     return planned.slice(0, 1);
   }
@@ -2523,7 +2516,7 @@ function determineDiscussionTurnParticipants(input: {
       return planned.slice(0, 1);
     }
     if (needsTwoImplicitVoices && priorAgentContributors < 2) {
-      push(complement?.participantId ?? lead?.participantId);
+      push(manager?.participantId ?? complement?.participantId ?? lead?.participantId);
       return planned.slice(0, 1);
     }
     if (currentCycleContributorCount === 0 && historicalAgentContributors >= 1) {
@@ -2581,6 +2574,20 @@ function determineDiscussionTurnParticipants(input: {
   }
 
   return [];
+}
+
+function resolveMaxDiscussionTurns(
+  triggerMessage: HallMessage | undefined,
+  participants: HallParticipant[],
+  broadcastAll: boolean,
+): number {
+  if (broadcastAll) return participants.filter((p) => p.active && !p.isHuman).length;
+  const text = triggerMessage?.content?.trim() ?? "";
+  const intent = classifyHallDiscussionFollowupIntent(text);
+  if (intent === "direct_deliverable_request" || intent === "repo_scan_request" || intent === "review_request") return 1;
+  if (intent === "decision_request") return 3;
+  if (requestsMultiPerspectiveDiscussion(text)) return 3;
+  return 2;
 }
 
 function requestsMultiPerspectiveDiscussion(text: string): boolean {
@@ -2747,6 +2754,27 @@ async function runHallRuntimeExecutionChain(input: {
       });
     } catch (error) {
       generatedMessages.push(await appendRuntimeFailureHallMessage(input.hall, taskCard, input.participant, error));
+      try {
+        const released = releaseHallExecutionLock(taskCard, "runtime_error_fallback");
+        taskCard = (await updateHallTaskCard({
+          taskCardId: taskCard.taskCardId,
+          stage: "discussion",
+          status: "todo",
+          currentOwnerParticipantId: null,
+          currentOwnerLabel: null,
+          currentExecutionItem: null,
+          executionLock: released.executionLock,
+        })).taskCard;
+        generatedMessages.push(await appendHallSystemMessage({
+          hallId: input.hall.hallId,
+          projectId: taskCard.projectId,
+          taskId: taskCard.taskId,
+          taskCardId: taskCard.taskCardId,
+          roomId: taskCard.roomId,
+          content: "执行中断，已回到讨论阶段。你可以调整后重新开始执行。",
+          payload: { taskStage: "discussion", taskStatus: "todo", status: "execution_error_fallback" },
+        }));
+      } catch { /* best-effort fallback */ }
       return { taskCard, task, generatedMessages };
     }
 

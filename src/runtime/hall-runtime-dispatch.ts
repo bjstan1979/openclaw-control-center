@@ -107,7 +107,7 @@ interface ConcreteDeliverableEnforcement {
   preserveExistingSummary?: boolean;
 }
 
-type HallOperatorIntentType =
+export type HallOperatorIntentType =
   | "discussion_request"
   | "direct_deliverable_request"
   | "repo_scan_request"
@@ -460,12 +460,7 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
   if (input.mode === "handoff" && input.handoff) {
     return [
       ...commonBase,
-      "Reply like a real coworker in a busy work chat: concrete, specific, and natural, without memo tone.",
-      "Sound like a teammate helping the work move, not a narrator explaining the workflow.",
-      "Lead with the point itself, not with scene-setting or report language.",
-      "Only answer the part that still matters. Do not rewrite the whole thread.",
-      "Prefer direct work-chat phrasing: decisive, easy to hand off, and natural. Avoid retrospective or report tone.",
-      'Avoid filler openings like "我先把…", "当前结果是…", "现阶段…", "我建议下一步…", "I want to clarify", or "At this stage". Start with the concrete action or result.',
+      ...buildCoworkerToneBlock(),
       "You are receiving a structured handoff and should continue the real work now.",
       `Handoff goal: ${input.handoff.goal}`,
       `Current result: ${input.handoff.currentResult}`,
@@ -485,54 +480,54 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
       "For repo/code-scan work, inspect the repo before replying and cite real file paths plus what each file proves.",
       buildConcreteExecutionOutputRequirement(nextExecutionItem?.task ?? input.handoff.goal, responseLanguage),
       "Prefer this shape: what changed, and @who acts next.",
-      "If it is ready for review, say it like a teammate: '现在请老板评审。' / 'Ready for review.' Do not say '推进到 review' or other system phrasing.",
-      "No numbered list unless the deliverable itself is literally a list.",
-      'Good example: "这版先收住了，owner 还不够显眼。@下一位 你把最后一拍改成可执行句。" ',
+      "If it is ready for review, say it like a teammate: ‘现在请老板评审。’ / ‘Ready for review.’ Do not say ‘推进到 review’ or other system phrasing.",
       "If there is a next owner and no blocker, explicitly @ that owner in the visible reply.",
     nextExecutionItem?.task
       ? `If you hand off, keep your visible @handoff aligned with the planned next task for ${nextParticipant?.displayName ?? "the next owner"}: ${nextExecutionItem.task}`
       : "",
       "Do not say the work is ready, done, or ready for review until the visible reply already contains the concrete deliverable for your step.",
-      "Do not restate the whole thread. Do not write a retrospective. Do not reopen earlier owners unless there is a real blocker.",
-      'Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".',
+      ‘Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".’,
     ].filter(Boolean).join("\n");
   }
 
   return [
     ...commonBase,
-    "Reply like a real coworker in a busy work chat: concrete, specific, and natural, without memo tone.",
-    "Sound like a teammate helping the work move, not a narrator explaining the workflow.",
-    "Lead with the point itself, not with scene-setting or report language.",
-    "Only answer the part that still matters. Do not rewrite the whole thread.",
-    "Prefer direct work-chat phrasing: decisive, easy to hand off, and natural. Avoid retrospective or report tone.",
-    'Avoid filler openings like "我先把…", "当前结果是…", "现阶段…", "我建议下一步…", "I want to clarify", or "At this stage". Start with the concrete action or result.',
+    ...buildCoworkerToneBlock(),
     "You are the current execution owner. Do the real work now if needed, then post the full worker result needed by the hall.",
     currentExecutionItem?.task ? `Your current execution item: ${currentExecutionItem.task}` : "",
     currentExecutionItem?.handoffWhen ? `Your step is done when: ${currentExecutionItem.handoffWhen}` : "",
     nextParticipant
       ? `The next queued owner after you is ${nextParticipant.displayName}. When your current execution item is complete, hand the work off to ${nextParticipant.displayName} instead of doing their step yourself.`
       : "If your current execution item is complete and there is no next owner, move the work to review instead of inventing extra steps.",
-    nextExecutionItem?.task ? `The next owner's step after you is: ${nextExecutionItem.task}` : "",
+    nextExecutionItem?.task ? `The next owner’s step after you is: ${nextExecutionItem.task}` : "",
     input.note ? `Assignment note: ${input.note}` : "",
     "Stay inside the current execution item only. Do not complete deliverables that belong to later owners in the execution order.",
-    "Write like a coworker in a work chat.",
     "Post the full deliverable the step actually needs. Do not compress real output into two lines.",
     "Say only what concrete result now exists, any real blocker, and @who acts next.",
     "If your current execution item asks for a concrete deliverable, the visible reply must contain that deliverable itself: the actual hooks, thumbnail ideas, URLs, script lines, file findings, or repo evidence. Do not just comment on what should be done.",
     "For code-scan / repo-summary work, inspect the repo before replying. The visible reply must cite real file paths and what you found in them.",
     buildConcreteExecutionOutputRequirement(currentExecutionItem?.task, responseLanguage),
     "If your step is done and there is a next owner, make the visible reply read like a handoff between coworkers, not a status report.",
-    "No numbered list unless the deliverable itself is literally a list.",
-    'Good example: "第一版脚本先锁住了，核心句是‘不是在聊天，是在推进任务’。@下一位 你只挑必须改的一点。" ',
     "If there is a next queued owner and you are not blocked, explicitly @ that owner in the visible reply.",
     nextExecutionItem?.task
       ? `If you hand off, do not invent a different next task. Keep your visible @handoff aligned with the planned next task for ${nextParticipant?.displayName ?? "the next owner"}: ${nextExecutionItem.task}`
       : "",
     "Do not say the work is done, hand off, or ask for review until the visible reply already contains the concrete deliverable for your step.",
-    "Do not write a project recap, status memo, or generic brainstorming. If there is a next queued owner and you are not blocked, hand off instead of lingering on your own step.",
-    'Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".',
-    'Allowed nextAction values: "continue" when you need one more pass on your current execution item, "handoff" when your current execution item is complete and the next queued owner should take over, "review" when the work is ready for review and there is no further handoff, and "blocked" when you need help before continuing.',
+    "If there is a next queued owner and you are not blocked, hand off instead of lingering on your own step.",
+    ‘Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".’,
+    ‘Allowed nextAction values: "continue" when you need one more pass on your current execution item, "handoff" when your current execution item is complete and the next queued owner should take over, "review" when the work is ready for review and there is no further handoff, and "blocked" when you need help before continuing.’,
   ].filter(Boolean).join("\n");
+}
+
+function buildCoworkerToneBlock(): string[] {
+  return [
+    "Reply like a real coworker in a busy work chat: concrete, specific, and natural, without memo tone.",
+    "Lead with the point itself, not with scene-setting or report language.",
+    "Only answer the part that still matters. Do not rewrite the whole thread.",
+    ‘Avoid filler openings like "我先把…", "当前结果是…", "现阶段…", "I want to clarify", or "At this stage". Start with the concrete action or result.’,
+    "No numbered list unless the deliverable itself is literally a list.",
+    "Do not restate the whole thread. Do not write a retrospective or project recap.",
+  ];
 }
 
 function buildHallRulesPromptBlock(): string {
@@ -601,7 +596,7 @@ function resolveHallOperatorIntent(
   };
 }
 
-function classifyHallOperatorIntent(text: string): HallOperatorIntentType {
+export function classifyHallOperatorIntent(text: string): HallOperatorIntentType {
   const normalized = normalizeHallIntentSourceText(text);
   if (/(开始执行|继续讨论|安排后续顺序|调整执行顺序|保存顺序|stop|停止|暂停|恢复|resume|start execution)/i.test(text)) {
     return "control_request";
@@ -1162,6 +1157,16 @@ function buildHallRuntimeResult(input: {
       payload.proposal = structured.proposal ?? content;
       taskCardPatch.proposal = payload.proposal;
       taskCardPatch.doneWhen = structured.doneWhen ?? dispatch.taskCard.doneWhen;
+      if (structured.decision?.trim()) {
+        const rawExecutor = structured.executor?.trim();
+        const executor = resolveExecutorParticipant(dispatch.hall, rawExecutor);
+        payload.decision = structured.decision;
+        taskCardPatch.decision = structured.decision;
+        if (executor) {
+          payload.nextOwnerParticipantId = executor.participantId;
+          payload.executionOrder = buildRuntimeSuggestedExecutionOrder(dispatch.hall, dispatch.taskCard, executor.participantId);
+        }
+      }
     }
   } else {
     payload.status = dispatch.mode === "handoff" ? "runtime_handoff_update" : "runtime_execution_update";
@@ -1913,7 +1918,7 @@ function extractStructuredBlock(rawText: string): { visibleText: string; structu
   if (!match) {
     const danglingStructuredStart = rawText.search(/<hall-structured>/i);
     const visibleText = (danglingStructuredStart >= 0 ? rawText.slice(0, danglingStructuredStart) : rawText).trim();
-    return { visibleText, structured: {} };
+    return { visibleText, structured: inferStructuredFromVisibleText(visibleText) };
   }
   let structured: ParsedStructuredBlock = {};
   try {
@@ -1931,10 +1936,46 @@ function extractStructuredBlock(rawText: string): { visibleText: string; structu
       artifactRefs: asOptionalArtifactRefs(parsed.artifactRefs),
     };
   } catch {
-    structured = {};
+    try {
+      const repaired = match[1].replace(/,\s*([}\]])/g, "$1");
+      const parsed = JSON.parse(repaired) as Record<string, unknown>;
+      structured = {
+        proposal: asOptionalString(parsed.proposal),
+        decision: asOptionalString(parsed.decision),
+        executor: asOptionalString(parsed.executor),
+        doneWhen: asOptionalString(parsed.doneWhen),
+        blockers: asOptionalStringArray(parsed.blockers),
+        requiresInputFrom: asOptionalStringArray(parsed.requiresInputFrom),
+        latestSummary: asOptionalString(parsed.latestSummary),
+        nextAction: asOptionalNextAction(parsed.nextAction),
+        nextStep: asOptionalString(parsed.nextStep),
+        artifactRefs: asOptionalArtifactRefs(parsed.artifactRefs),
+      };
+    } catch {
+      structured = {};
+    }
+  }
+  if (!structured.nextAction) {
+    const visibleText = rawText.replace(match[0], "").trim();
+    const inferred = inferStructuredFromVisibleText(visibleText);
+    structured = { ...structured, ...inferred };
   }
   const visibleText = rawText.replace(match[0], "").trim();
   return { visibleText, structured };
+}
+
+function inferStructuredFromVisibleText(visibleText: string): ParsedStructuredBlock {
+  if (!visibleText) return {};
+  const nextAction: HallRuntimeNextAction | undefined =
+    /(?:请评审|ready for review|请.*review)/i.test(visibleText) ? "review"
+    : /(?:卡住|blocked|卡点|需要.*帮助|need help)/i.test(visibleText) ? "blocked"
+    : /(?:交给|handoff|接棒|@)/i.test(visibleText) ? "handoff"
+    : undefined;
+  const latestSummary = visibleText.replace(/\s+/g, " ").trim().slice(0, 200) || undefined;
+  return {
+    nextAction,
+    latestSummary: nextAction ? latestSummary : undefined,
+  };
 }
 
 function buildFallbackVisibleContent(input: HallRuntimeDispatchInput, rawText: string): string {

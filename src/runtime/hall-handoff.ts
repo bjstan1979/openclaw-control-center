@@ -26,9 +26,9 @@ export interface CreateStructuredHandoffInput {
 
 export function buildStructuredHandoffPacket(input: CreateStructuredHandoffInput): StructuredHandoffPacket {
   const issues: string[] = [];
-  const goal = requireText(input.goal, "goal", 240, issues);
-  const currentResult = requireText(input.currentResult, "currentResult", 500, issues);
-  const doneWhen = requireText(input.doneWhen, "doneWhen", 240, issues);
+  const goal = requireText(input.goal, "goal", 480, issues);
+  const currentResult = requireText(input.currentResult, "currentResult", 1000, issues);
+  const doneWhen = requireText(input.doneWhen, "doneWhen", 480, issues);
   const nextOwner = requireText(input.nextOwner, "nextOwner", 120, issues);
   const blockers = normalizeStringArray(input.blockers, "blockers", 240, issues);
   const requiresInputFrom = normalizeStringArray(input.requiresInputFrom, "requiresInputFrom", 120, issues);
