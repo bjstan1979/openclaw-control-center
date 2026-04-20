@@ -1082,6 +1082,7 @@ export function renderCollaborationHallTheme(): string {
       font-size: 13px;
       line-height: 1.58;
       color: #173346;
+      word-break: break-word;
     }
     .hall-message-body h1,
     .hall-message-body h2,
@@ -1089,7 +1090,8 @@ export function renderCollaborationHallTheme(): string {
       font-size: 14px;
       font-weight: 700;
       line-height: 1.4;
-      margin: 6px 0 4px;
+      margin: 8px 0 4px;
+      color: #0f2e42;
     }
     .hall-message-body h4,
     .hall-message-body h5,
@@ -1098,36 +1100,96 @@ export function renderCollaborationHallTheme(): string {
       font-weight: 700;
       line-height: 1.4;
       margin: 4px 0 2px;
+      color: #0f2e42;
     }
-    .hall-message-body > :first-child {
-      margin-top: 0;
+    .hall-message-body p {
+      margin: 0 0 6px;
     }
-    .hall-message-body > :last-child {
+    .hall-message-body p:last-child {
       margin-bottom: 0;
     }
-    .hall-message-body p,
-    .hall-message-body ul,
-    .hall-message-body ol,
-    .hall-message-body blockquote,
-    .hall-message-body pre {
-      margin: 0 0 8px;
+    .hall-message-body strong {
+      font-weight: 700;
+      color: #0a1f2e;
+    }
+    .hall-message-body em {
+      font-style: italic;
+      color: #3a5a6e;
     }
     .hall-message-body ul,
     .hall-message-body ol {
-      padding-left: 18px;
+      margin: 4px 0 8px;
+      padding-left: 20px;
+    }
+    .hall-message-body li {
+      margin: 2px 0;
+    }
+    .hall-message-body hr {
+      border: none;
+      border-top: 1px solid rgba(15, 95, 150, 0.1);
+      margin: 8px 0;
     }
     .hall-message-body code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.92em;
-      padding: 0.08rem 0.35rem;
-      border-radius: 8px;
-      background: rgba(17, 43, 68, 0.06);
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 12px;
+      background: rgba(15, 95, 150, 0.06);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #1a5276;
+    }
+    .hall-message-body pre {
+      background: rgba(15, 95, 150, 0.04);
+      border: 1px solid rgba(15, 95, 150, 0.08);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin: 6px 0;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .hall-message-body pre code {
+      background: none;
+      padding: 0;
+      font-size: 12px;
+    }
+    .hall-message-body table {
+      border-collapse: collapse;
+      margin: 6px 0;
+      font-size: 12px;
+      width: auto;
+    }
+    .hall-message-body th,
+    .hall-message-body td {
+      border: 1px solid rgba(15, 95, 150, 0.12);
+      padding: 4px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .hall-message-body th {
+      background: rgba(15, 95, 150, 0.06);
+      font-weight: 700;
+      color: #0f2e42;
+    }
+    .hall-message-body td {
+      color: #173346;
+    }
+    .hall-message-body blockquote {
+      border-left: 3px solid rgba(15, 95, 150, 0.2);
+      margin: 6px 0;
+      padding: 2px 10px;
+      color: #4a6a7e;
+      font-size: 12px;
     }
     .hall-message-body a {
-      color: #2c7fc3;
+      color: #1a7ab5;
+      text-decoration: none;
+    }
+    .hall-message-body a:hover {
       text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 2px;
+    }
+    .hall-message-body hall-structured,
+    .hall-message-body .hall-structured {
+      display: none;
     }
     .hall-md-mention {
       display: inline-block;
@@ -1159,11 +1221,6 @@ export function renderCollaborationHallTheme(): string {
       max-height: 420px;
       object-fit: contain;
       background: rgba(243, 249, 255, 0.9);
-    }
-    .hall-message-body blockquote {
-      padding-left: 10px;
-      border-left: 3px solid rgba(95, 159, 214, 0.24);
-      color: #47657c;
     }
     .hall-md-pre {
       overflow-x: auto;
@@ -1956,6 +2013,44 @@ export function renderCollaborationHallTheme(): string {
     html[data-theme="dark"] .hall-message-body blockquote {
       border-left-color: rgba(92, 176, 245, 0.28);
       color: var(--muted);
+    }
+    html[data-theme="dark"] .hall-message-body strong {
+      color: #e2eaf2;
+    }
+    html[data-theme="dark"] .hall-message-body em {
+      color: #8faabe;
+    }
+    html[data-theme="dark"] .hall-message-body h1,
+    html[data-theme="dark"] .hall-message-body h2,
+    html[data-theme="dark"] .hall-message-body h3,
+    html[data-theme="dark"] .hall-message-body h4,
+    html[data-theme="dark"] .hall-message-body h5,
+    html[data-theme="dark"] .hall-message-body h6 {
+      color: #d8e4ee;
+    }
+    html[data-theme="dark"] .hall-message-body hr {
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-message-body pre {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-message-body pre code {
+      color: #c8d8e6;
+    }
+    html[data-theme="dark"] .hall-message-body table {
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-message-body th,
+    html[data-theme="dark"] .hall-message-body td {
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="dark"] .hall-message-body th {
+      background: rgba(255, 255, 255, 0.06);
+      color: #d8e4ee;
+    }
+    html[data-theme="dark"] .hall-message-body td {
+      color: #b0c4d6;
     }
     html[data-theme="dark"] .hall-md-pre {
       background: rgba(255, 255, 255, 0.06);
