@@ -585,12 +585,37 @@ export function renderCollaborationHallTheme(): string {
     }
     .hall-decision-inline-summary {
       min-width: 0;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 12px;
+      line-height: 1.5;
       font-weight: 600;
       color: #12344a;
       word-break: break-word;
       white-space: normal;
+    }
+    .hall-decision-inline-summary p {
+      margin: 0 0 4px;
+    }
+    .hall-decision-inline-summary p:last-child {
+      margin-bottom: 0;
+    }
+    .hall-decision-inline-summary ul,
+    .hall-decision-inline-summary ol {
+      margin: 2px 0 4px;
+      padding-left: 18px;
+    }
+    .hall-decision-inline-summary li {
+      margin-bottom: 2px;
+    }
+    .hall-decision-inline-summary strong {
+      color: inherit;
+      font-weight: 700;
+    }
+    .hall-decision-inline-summary code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      padding: 0.06rem 0.3rem;
+      border-radius: 4px;
+      background: rgba(17, 43, 68, 0.06);
     }
     .hall-decision-toggle {
       flex: none;
@@ -1886,6 +1911,9 @@ export function renderCollaborationHallTheme(): string {
     }
     html[data-theme="dark"] .hall-decision-inline-summary {
       color: var(--text);
+    }
+    html[data-theme="dark"] .hall-decision-inline-summary code {
+      background: rgba(255, 255, 255, 0.08);
     }
     html[data-theme="dark"] .hall-decision-summary--compact {
       color: var(--muted);

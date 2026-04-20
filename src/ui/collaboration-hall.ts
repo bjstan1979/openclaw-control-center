@@ -1487,7 +1487,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
                 '<div class="hall-decision-copy">' +
                   '<div class="hall-decision-label">' + esc(textDiscussionResult) + '</div>' +
                   '<div class="hall-decision-title-row">' +
-                    '<div class="hall-decision-inline-summary" title="' + esc(compactSummaryText || taskCard.title || '') + '">' + esc(compactSummaryText || taskCard.title || '') + '</div>' +
+                    '<div class="hall-decision-inline-summary">' + (isExpanded ? esc(taskCard.title || '') : esc((compactSummaryText || taskCard.title || '').replace(/\s+/g, ' ').trim().slice(0, 120) + ((compactSummaryText || taskCard.title || '').length > 120 ? '…' : ''))) + '</div>' +
                     '<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">' + esc(isExpanded ? textHideDetails : textShowDetails) + '</button>' +
                   '</div>' +
                   (isExpanded && summaryStats.length > 0
@@ -1502,7 +1502,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
               (isExpanded && !executionPlannerOpen ? (
                 '<div class="hall-decision-body">' +
                   '<div class="hall-decision-row"><strong>' + esc(textThread) + '</strong><span title="' + esc(taskCard.title || '') + '">' + esc(taskCard.title || '-') + '</span></div>' +
-                  (taskCard.decision ? '<div class="hall-decision-row"><strong>' + esc(textDecision) + '</strong><span class="hall-decision-value" title="' + esc(taskCard.decision) + '">' + renderMarkdownHtml(taskCard.decision) + '</span></div>' : '') +
+                  (taskCard.decision ? '<div class="hall-decision-row"><strong>' + esc(textDecision) + '</strong><span class="hall-decision-value">' + renderMarkdownHtml(taskCard.decision) + '</span></div>' : '') +
                 (ownerMeta.label ? '<div class="hall-decision-row"><strong>' + esc(ownerMeta.heading) + '</strong><span title="' + esc(ownerMeta.label) + '">' + esc(ownerMeta.label) + '</span></div>' : '') +
                   (stepMeta.task ? '<div class="hall-decision-row"><strong>' + esc(stepMeta.heading) + '</strong><span title="' + esc(stepMeta.task) + '">' + esc(stepMeta.task) + '</span></div>' : '') +
                   (taskArtifacts.length > 0 ? '<div class="hall-decision-row"><strong>' + esc(textTaskArtifacts) + '</strong><div class="hall-artifact-list">' + renderArtifactChips(taskArtifacts) + '</div></div>' : '') +
@@ -3114,7 +3114,7 @@ function renderInitialDecisionPanel(
               `<div class="hall-decision-copy">` +
                 `<div class="hall-decision-label">${escapeHtml(pickUiText(language, "Discussion result", "讨论结论"))}</div>` +
                 `<div class="hall-decision-title-row">` +
-                  `<div class="hall-decision-inline-summary" title="${escapeHtml(compactSummaryText || selectedTaskCard.title || "")}">${escapeHtml(compactSummaryText || selectedTaskCard.title || "")}</div>` +
+                  `<div class="hall-decision-inline-summary">${isExpanded ? escapeHtml(selectedTaskCard.title || "") : escapeHtml((compactSummaryText || selectedTaskCard.title || "").replace(/\s+/g, " ").trim().slice(0, 120) + ((compactSummaryText || selectedTaskCard.title || "").length > 120 ? "…" : ""))}</div>` +
                   `<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">${escapeHtml(isExpanded ? pickUiText(language, "Hide details", "收起详情") : pickUiText(language, "Show details", "展开详情"))}</button>` +
                 `</div>` +
                 (isExpanded && summaryStats.length > 0
@@ -3127,7 +3127,7 @@ function renderInitialDecisionPanel(
             (isExpanded ? (
               `<div class="hall-decision-body">` +
                 `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Thread", "线程"))}</strong><span title="${escapeHtml(selectedTaskCard.title || "")}">${escapeHtml(selectedTaskCard.title || "-")}</span></div>` +
-                (selectedTaskCard.decision ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Decision", "决策"))}</strong><span class="hall-decision-value" title="${escapeHtml(selectedTaskCard.decision)}">${renderMarkdown(selectedTaskCard.decision)}</span></div>` : "") +
+                (selectedTaskCard.decision ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Decision", "决策"))}</strong><span class="hall-decision-value">${renderMarkdown(selectedTaskCard.decision)}</span></div>` : "") +
                 (selectedTaskCard.doneWhen ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Done when", "完成标准"))}</strong><span title="${escapeHtml(selectedTaskCard.doneWhen)}">${escapeHtml(selectedTaskCard.doneWhen)}</span></div>` : "") +
                 (queueLabels.length > 0 ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Execution order", "执行顺序"))}</strong><span>${escapeHtml(queueLabels.join(" → "))}</span></div>` : "") +
                 actionItemMarkup +
