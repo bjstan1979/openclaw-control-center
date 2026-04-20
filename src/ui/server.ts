@@ -7945,6 +7945,7 @@ async function renderHtml(
 <head>
   <meta charset="utf-8" />
   <title>OpenClaw Control Center</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231a2744'/%3E%3Cpath d='M10 8c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7S7.3 16.2 7.3 14.7v-4C7.3 9.2 8.5 8 10 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C13.3 9.2 14.5 8 16 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C19.3 9.2 20.5 8 22 8zM10 18.4c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2zm12 0c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2z' fill='%23e8edf3'/%3E%3C/svg%3E" />
   <script>
     (() => {
       const key = 'openclaw:theme';
@@ -10742,6 +10743,23 @@ async function renderHtml(
     html[data-theme="dark"] .pie-hole strong { color: var(--text); }
     html[data-theme="dark"] .pie-legend li { color: var(--text); border-bottom-color: rgba(226, 232, 240, 0.12); }
     html[data-theme="dark"] summary { color: var(--text); }
+    html[data-theme="dark"] .execution-chain-copy strong { color: var(--text); }
+    html[data-theme="dark"] .execution-chain-context { color: var(--muted); }
+    html[data-theme="dark"] .execution-chain-meta-line { color: var(--muted); }
+    html[data-theme="dark"] .execution-chain-flow {
+      border-color: rgba(226, 232, 240, 0.12);
+      background: rgba(18, 28, 44, 0.86);
+      color: var(--text);
+    }
+    html[data-theme="dark"] .execution-chain-flow code { color: var(--text); }
+    html[data-theme="dark"] .execution-chain-summary { color: var(--text); }
+    html[data-theme="dark"] .execution-chain-arrow { color: var(--muted); }
+    html[data-theme="dark"] .execution-chain-card {
+      background: var(--card-fill-soft);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 18px 34px rgba(1, 4, 9, 0.12);
+    }
     .staff-brief-identity h3 {
       margin: 0;
       font-size: 20px;
@@ -18680,6 +18698,7 @@ function renderSessionDrilldownPage(
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(t("OpenClaw Control Center Session Drilldown", "OpenClaw 控制中心会话详情"))}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231a2744'/%3E%3Cpath d='M10 8c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7S7.3 16.2 7.3 14.7v-4C7.3 9.2 8.5 8 10 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C13.3 9.2 14.5 8 16 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C19.3 9.2 20.5 8 22 8zM10 18.4c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2zm12 0c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2z' fill='%23e8edf3'/%3E%3C/svg%3E" />
   <style>
     body { font-family: "SF Mono", Menlo, monospace; background: #0b1016; color: #d6e7f9; padding: 16px; margin: 0; }
     a { color: #7dd3fc; }
@@ -18771,6 +18790,7 @@ function renderAuditPage(timeline: AuditTimelineSnapshot, severity: AuditSeverit
 <head>
   <meta charset="utf-8" />
   <title>OpenClaw Control Center Audit Timeline</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231a2744'/%3E%3Cpath d='M10 8c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7S7.3 16.2 7.3 14.7v-4C7.3 9.2 8.5 8 10 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C13.3 9.2 14.5 8 16 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C19.3 9.2 20.5 8 22 8zM10 18.4c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2zm12 0c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2z' fill='%23e8edf3'/%3E%3C/svg%3E" />
   <style>
     body { font-family: "SF Mono", Menlo, monospace; background: #0b1016; color: #d6e7f9; padding: 16px; margin: 0; }
     a { color: #7dd3fc; }
@@ -18845,6 +18865,7 @@ function renderTaskDetailPage(input: {
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(t("Task detail", "任务详情"))} · ${escapeHtml(task.taskId)}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231a2744'/%3E%3Cpath d='M10 8c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7S7.3 16.2 7.3 14.7v-4C7.3 9.2 8.5 8 10 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C13.3 9.2 14.5 8 16 8zm6 0c1.5 0 2.7 1.2 2.7 2.7v4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7v-4C19.3 9.2 20.5 8 22 8zM10 18.4c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2zm12 0c1.5 0 2.7 1 2.7 2.2v2.7c0 1.2-1.2 2.2-2.7 2.2s-2.7-1-2.7-2.2v-2.7c0-1.2 1.2-2.2 2.7-2.2z' fill='%23e8edf3'/%3E%3C/svg%3E" />
   <style>
     body { font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; margin:0; padding:20px; background:#f5f5f7; color:#1d1d1f; }
     .page { max-width: 860px; margin: 0 auto; display:grid; gap:12px; }
