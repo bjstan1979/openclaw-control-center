@@ -154,14 +154,7 @@ type HallResponseLanguage = "zh" | "en";
 const CONTROL_CENTER_REPO_ROOT = process.cwd();
 const OPENCLAW_HOME_DIR = resolveOpenClawHomePath();
 const OPENCLAW_CONFIG_PATH = resolveOpenClawConfigPath();
-const CONTROL_CENTER_REPO_ENTRY_FILES = [
-  "src/ui/collaboration-hall.ts",
-  "src/ui/collaboration-hall-theme.ts",
-  "src/ui/server.ts",
-  "src/runtime/collaboration-hall-orchestrator.ts",
-  "src/runtime/hall-runtime-dispatch.ts",
-  "src/types.ts",
-];
+const CONTROL_CENTER_REPO_ENTRY_FILES: string[] = [];
 const HALL_RULES_OVERRIDE_ENV = "OPENCLAW_HALL_RULES_PATH";
 const HALL_RULES_DEFAULT_FILE = "HALL.md";
 const HALL_RULES_MAX_CHARS = 6_000;
