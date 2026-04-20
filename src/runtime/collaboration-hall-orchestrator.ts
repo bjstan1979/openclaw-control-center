@@ -949,6 +949,7 @@ export async function postHallMessage(
       triggerMessage: message,
       explicitTargetParticipantIds: targetParticipantIds,
       strictMentions: mentionRouting.targets.length > 0 && !mentionRouting.broadcastAll,
+      broadcastAll: mentionRouting.broadcastAll,
       toolClient: options.toolClient,
     },
   );
@@ -2285,6 +2286,7 @@ async function runHallDiscussion(
     triggerMessage?: HallMessage;
     explicitTargetParticipantIds?: string[];
     strictMentions?: boolean;
+    broadcastAll?: boolean;
     toolClient?: ToolClient;
   } = {},
 ): Promise<{
@@ -2356,7 +2358,7 @@ async function runHallDiscussion(
     const explicitQueue = options.strictMentions && explicitTargets.length > 0 ? explicitTargets.slice() : [];
     const maxDiscussionTurns = explicitQueue.length > 0
       ? explicitQueue.length
-      : resolveMaxDiscussionTurns(discussionTriggerMessage, context.hall.participants, mentionRouting.broadcastAll);
+      : resolveMaxDiscussionTurns(discussionTriggerMessage, context.hall.participants, options.broadcastAll ?? false);
 
     for (let turn = 0; turn < maxDiscussionTurns; turn += 1) {
       const plannedParticipantIds = explicitQueue.length > 0

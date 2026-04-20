@@ -480,13 +480,13 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
       "For repo/code-scan work, inspect the repo before replying and cite real file paths plus what each file proves.",
       buildConcreteExecutionOutputRequirement(nextExecutionItem?.task ?? input.handoff.goal, responseLanguage),
       "Prefer this shape: what changed, and @who acts next.",
-      "If it is ready for review, say it like a teammate: ‘现在请老板评审。’ / ‘Ready for review.’ Do not say ‘推进到 review’ or other system phrasing.",
+      "If it is ready for review, say it like a teammate: '现在请老板评审。' / 'Ready for review.' Do not say '推进到 review' or other system phrasing.",
       "If there is a next owner and no blocker, explicitly @ that owner in the visible reply.",
     nextExecutionItem?.task
       ? `If you hand off, keep your visible @handoff aligned with the planned next task for ${nextParticipant?.displayName ?? "the next owner"}: ${nextExecutionItem.task}`
       : "",
       "Do not say the work is ready, done, or ready for review until the visible reply already contains the concrete deliverable for your step.",
-      ‘Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".’,
+      'Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".',
     ].filter(Boolean).join("\n");
   }
 
@@ -499,7 +499,7 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
     nextParticipant
       ? `The next queued owner after you is ${nextParticipant.displayName}. When your current execution item is complete, hand the work off to ${nextParticipant.displayName} instead of doing their step yourself.`
       : "If your current execution item is complete and there is no next owner, move the work to review instead of inventing extra steps.",
-    nextExecutionItem?.task ? `The next owner’s step after you is: ${nextExecutionItem.task}` : "",
+    nextExecutionItem?.task ? `The next owner's step after you is: ${nextExecutionItem.task}` : "",
     input.note ? `Assignment note: ${input.note}` : "",
     "Stay inside the current execution item only. Do not complete deliverables that belong to later owners in the execution order.",
     "Post the full deliverable the step actually needs. Do not compress real output into two lines.",
@@ -514,8 +514,8 @@ function buildHallRuntimePrompt(input: HallRuntimeDispatchInput, repoContext: Ha
       : "",
     "Do not say the work is done, hand off, or ask for review until the visible reply already contains the concrete deliverable for your step.",
     "If there is a next queued owner and you are not blocked, hand off instead of lingering on your own step.",
-    ‘Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".’,
-    ‘Allowed nextAction values: "continue" when you need one more pass on your current execution item, "handoff" when your current execution item is complete and the next queued owner should take over, "review" when the work is ready for review and there is no further handoff, and "blocked" when you need help before continuing.’,
+    'Structured JSON keys you may include: "latestSummary", "blockers", "requiresInputFrom", "doneWhen", "nextAction", "nextStep", "artifactRefs".',
+    'Allowed nextAction values: "continue" when you need one more pass on your current execution item, "handoff" when your current execution item is complete and the next queued owner should take over, "review" when the work is ready for review and there is no further handoff, and "blocked" when you need help before continuing.',
   ].filter(Boolean).join("\n");
 }
 
@@ -524,7 +524,7 @@ function buildCoworkerToneBlock(): string[] {
     "Reply like a real coworker in a busy work chat: concrete, specific, and natural, without memo tone.",
     "Lead with the point itself, not with scene-setting or report language.",
     "Only answer the part that still matters. Do not rewrite the whole thread.",
-    ‘Avoid filler openings like "我先把…", "当前结果是…", "现阶段…", "I want to clarify", or "At this stage". Start with the concrete action or result.’,
+    'Avoid filler openings like "我先把…", "当前结果是…", "现阶段…", "I want to clarify", or "At this stage". Start with the concrete action or result.',
     "No numbered list unless the deliverable itself is literally a list.",
     "Do not restate the whole thread. Do not write a retrospective or project recap.",
   ];
