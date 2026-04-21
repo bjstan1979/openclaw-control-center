@@ -1487,7 +1487,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
                 '<div class="hall-decision-copy">' +
                   '<div class="hall-decision-label">' + esc(textDiscussionResult) + '</div>' +
                   '<div class="hall-decision-title-row">' +
-                    '<div class="hall-decision-inline-summary">' + (isExpanded ? esc(taskCard.title || '') : esc((compactSummaryText || taskCard.title || '').replace(/\s+/g, ' ').trim().slice(0, 120) + ((compactSummaryText || taskCard.title || '').length > 120 ? '…' : ''))) + '</div>' +
+                    '<div class="hall-decision-inline-summary">' + (isExpanded ? renderMarkdownHtml(compactSummaryText || taskCard.title || '') : esc((compactSummaryText || taskCard.title || '').replace(/\s+/g, ' ').trim().slice(0, 120) + ((compactSummaryText || taskCard.title || '').length > 120 ? '…' : ''))) + '</div>' +
                     '<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">' + esc(isExpanded ? textHideDetails : textShowDetails) + '</button>' +
                   '</div>' +
                   (isExpanded && summaryStats.length > 0
@@ -3114,7 +3114,7 @@ function renderInitialDecisionPanel(
               `<div class="hall-decision-copy">` +
                 `<div class="hall-decision-label">${escapeHtml(pickUiText(language, "Discussion result", "讨论结论"))}</div>` +
                 `<div class="hall-decision-title-row">` +
-                  `<div class="hall-decision-inline-summary">${isExpanded ? escapeHtml(selectedTaskCard.title || "") : escapeHtml((compactSummaryText || selectedTaskCard.title || "").replace(/\s+/g, " ").trim().slice(0, 120) + ((compactSummaryText || selectedTaskCard.title || "").length > 120 ? "…" : ""))}</div>` +
+                  `<div class="hall-decision-inline-summary">${isExpanded ? renderMarkdown(compactSummaryText || selectedTaskCard.title || "") : escapeHtml((compactSummaryText || selectedTaskCard.title || "").replace(/\s+/g, " ").trim().slice(0, 120) + ((compactSummaryText || selectedTaskCard.title || "").length > 120 ? "…" : ""))}</div>` +
                   `<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">${escapeHtml(isExpanded ? pickUiText(language, "Hide details", "收起详情") : pickUiText(language, "Show details", "展开详情"))}</button>` +
                 `</div>` +
                 (isExpanded && summaryStats.length > 0
