@@ -48,13 +48,10 @@ export function resolveHallMentionTargets(
 
 function containsExplicitMention(content: string, alias: string): boolean {
   const escaped = escapeRegex(alias);
-  // For multi-word aliases (containing spaces), allow the @mention
-  // to span across spaces in the content text.
-  if (alias.includes(" ")) {
-    const pattern = new RegExp(`(^|[\\s(])@${escaped}(?=$|[\\s),.!?;:])`, "i");
-    return pattern.test(content);
-  }
-  const pattern = new RegExp(`(^|[\\s(])@${escaped}(?=$|[\\s),.!?;:])`, "i");
+  // Allow CJK punctuation (。，、；：！？）before @mention
+  const prefix = `^[\\s(\\u3000\\u3001\\u3002\\uff0c\\uff1b\\uff1a\\uff01\\uff1f\\uff09]`;
+  const suffix = `(?=$|[\\s),.!?;:\\u3001\\u3002\\uff0c\\uff1b\\uff1a\\uff01\\uff1f])`;
+  const pattern = new RegExp(`(^|[\\s(\\u3000\\u3001\\u3002\\uff0c\\uff1b\\uff1a\\uff01\\uff1f\\uff09])@${escaped}${suffix}`, "i");
   return pattern.test(content);
 }
 
