@@ -2431,16 +2431,24 @@ function determineDiscussionTurnParticipants(input: {
       if (message.taskCardId !== input.taskCard.taskCardId && message.taskId !== input.taskCard.taskId) return false;
       return !cycleOpenedAt || message.createdAt >= cycleOpenedAt;
     });
+  // Also collect @mentions from the most recent agent message (e.g. "@coder evaluate this")
+  const latestAgentMentions = [...input.recentThreadMessages]
+    .reverse()
+    .find((message) => {
+      if (message.authorParticipantId === "operator" || message.authorParticipantId === "system") return false;
+      if (message.taskCardId !== input.taskCard.taskCardId && message.taskId !== input.taskCard.taskId) return false;
+      return !cycleOpenedAt || message.createdAt >= cycleOpenedAt;
+    });
   const triggerText = cycleTriggerMessage?.content?.trim()
     || input.triggerMessage?.content?.trim()
     || `${input.taskCard.title}\n${input.taskCard.description}\n${input.task?.title ?? ""}`;
   const explicitTargets = [
     ...new Set(
-      (
-        cycleTriggerMessage?.mentionTargets?.map((target) => target.participantId)
-        ?? input.triggerMessage?.mentionTargets?.map((target) => target.participantId)
-        ?? []
-      ).filter(Boolean),
+      [
+        ...(cycleTriggerMessage?.mentionTargets?.map((target) => target.participantId) ?? []),
+        ...(latestAgentMentions?.mentionTargets?.map((target) => target.participantId) ?? []),
+        ...(input.triggerMessage?.mentionTargets?.map((target) => target.participantId) ?? []),
+      ].filter(Boolean),
     ),
   ];
   const candidateIds = [
@@ -3177,6 +3185,7 @@ async function appendGeneratedHallReply(
           participant,
           content: draft.content,
           targetParticipantIds: [],
+          mentionTargets: resolveHallMentionTargets(draft.content, hall.participants).targets,
           projectId: taskCard.projectId,
           taskId: taskCard.taskId,
           taskCardId: taskCard.taskCardId,
@@ -3189,6 +3198,7 @@ async function appendGeneratedHallReply(
           participant,
           content: draft.content,
           targetParticipantIds: [],
+          mentionTargets: resolveHallMentionTargets(draft.content, hall.participants).targets,
           projectId: taskCard.projectId,
           taskId: taskCard.taskId,
           taskCardId: taskCard.taskCardId,
@@ -3290,6 +3300,7 @@ async function appendStreamedGeneratedHallMessage(input: {
   participant: HallParticipant;
   content: string;
   targetParticipantIds: string[];
+  mentionTargets?: HallMessage["mentionTargets"];
   projectId: string;
   taskId: string;
   taskCardId: string;
@@ -3320,6 +3331,7 @@ async function appendStreamedGeneratedHallMessage(input: {
       authorSemanticRole: input.participant.semanticRole,
       content: input.content,
       targetParticipantIds: input.targetParticipantIds,
+      mentionTargets: input.mentionTargets ?? [],
       projectId: input.projectId,
       taskId: input.taskId,
       taskCardId: input.taskCardId,
@@ -3346,6 +3358,7 @@ async function appendPersistedHallMessage(input: {
   participant: HallParticipant;
   content: string;
   targetParticipantIds: string[];
+  mentionTargets?: HallMessage["mentionTargets"];
   projectId: string;
   taskId: string;
   taskCardId: string;
@@ -3361,6 +3374,7 @@ async function appendPersistedHallMessage(input: {
       authorSemanticRole: input.participant.semanticRole,
       content: input.content,
       targetParticipantIds: input.targetParticipantIds,
+      mentionTargets: input.mentionTargets ?? [],
       projectId: input.projectId,
       taskId: input.taskId,
       taskCardId: input.taskCardId,
