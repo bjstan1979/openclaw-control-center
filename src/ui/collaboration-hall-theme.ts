@@ -189,6 +189,9 @@ export function renderCollaborationHallTheme(): string {
     .hall-roster-avatar {
       --hall-avatar-size: 28px;
     }
+    .hall-task-card-avatar {
+      --hall-avatar-size: 18px;
+    }
     .hall-empty-avatar {
       --hall-avatar-size: 56px;
     }
@@ -415,8 +418,8 @@ export function renderCollaborationHallTheme(): string {
       width: 100%;
       position: relative;
       border: 1px solid transparent;
-      border-radius: 18px;
-      padding: 10px 12px;
+      border-radius: 10px;
+      padding: 5px 6px;
       background: rgba(255,255,255,0.68);
       text-align: left;
       cursor: pointer;
@@ -439,16 +442,16 @@ export function renderCollaborationHallTheme(): string {
       content: "";
       position: absolute;
       left: 0;
-      top: 10px;
-      bottom: 10px;
-      width: 3px;
+      top: 5px;
+      bottom: 5px;
+      width: 2px;
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(16, 121, 192, 0.94), rgba(11, 98, 155, 0.92));
     }
     .hall-task-title {
       display: block;
-      font-size: 13px;
-      line-height: 1.32;
+      font-size: 11px;
+      line-height: 1.28;
       font-weight: 650;
       letter-spacing: -0.015em;
       overflow: visible;
@@ -458,46 +461,39 @@ export function renderCollaborationHallTheme(): string {
     .hall-task-card-row {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
-      gap: 10px;
+      gap: 5px;
       align-items: center;
     }
     .hall-task-card-avatar {
-      width: 34px;
-      height: 34px;
     }
     .hall-task-card-copy {
       min-width: 0;
       display: grid;
-      gap: 4px;
+      gap: 2px;
       align-content: start;
     }
     .hall-task-title-row {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 8px;
+      gap: 4px;
     }
     .hall-task-timestamp {
       flex: none;
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1.2;
       color: #7b8d9b;
       white-space: nowrap;
     }
     .hall-task-preview {
-      font-size: 11px;
-      line-height: 1.42;
-      color: #617687;
-      overflow: visible;
-      text-overflow: clip;
-      display: block;
-      white-space: normal;
-      word-break: break-word;
+      display: none;
     }
     .hall-task-preview.is-empty {
       display: none;
     }
-    .hall-task-meta,
+    .hall-task-meta {
+      display: none;
+    }
     .hall-message-meta,
     .hall-detail-meta {
       font-size: 11px;
