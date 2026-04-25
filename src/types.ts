@@ -289,6 +289,8 @@ export interface HallTaskCard {
   createdByParticipantId: string;
   currentOwnerParticipantId?: string;
   currentOwnerLabel?: string;
+  activeOwnerParticipantIds?: string[];
+  parallelGroupIndex?: number;
   proposal?: string;
   decision?: string;
   doneWhen?: string;
@@ -302,6 +304,7 @@ export interface HallTaskCard {
   sessionKeys: string[];
   discussionCycle?: TaskDiscussionCycle;
   executionLock?: ExecutionLock;
+  executionLocks?: ExecutionLock[];
   archivedAt?: string;
   archivedByParticipantId?: string;
   archivedByLabel?: string;
@@ -315,6 +318,11 @@ export interface HallExecutionItem {
   task: string;
   handoffToParticipantId?: string;
   handoffWhen?: string;
+}
+
+export interface ExecutionParallelGroup {
+  items: HallExecutionItem[];
+  dependsOnGroupIndex: number;
 }
 
 export interface CollaborationHall {

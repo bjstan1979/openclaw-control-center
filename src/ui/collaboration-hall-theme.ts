@@ -305,17 +305,9 @@ export function renderCollaborationHallTheme(): string {
       grid-template-rows: auto minmax(0, 1fr);
       overflow: hidden;
     }
-    .collaboration-hall-card.is-planning-order .hall-thread,
     .collaboration-hall-card.is-planning-order .hall-typing-strip,
     .collaboration-hall-card.is-planning-order .hall-composer-shell {
       display: none;
-    }
-    .collaboration-hall-card.is-planning-order .hall-decision-panel {
-      display: flex;
-      min-height: 0;
-      overflow: hidden;
-      padding-top: 0;
-      padding-right: 0;
     }
     .hall-pane--context {
       position: absolute;
@@ -513,16 +505,6 @@ export function renderCollaborationHallTheme(): string {
       overflow: auto;
       padding-right: 4px;
       padding-bottom: 4px;
-    }
-    .hall-decision-panel {
-      flex: 0 0 auto;
-      margin-top: 0;
-      padding-top: 6px;
-      padding-right: 2px;
-      overflow: visible;
-    }
-    .hall-decision-panel[hidden] {
-      display: none;
     }
     .hall-decision-card {
       display: grid;

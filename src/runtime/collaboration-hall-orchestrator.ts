@@ -15,8 +15,10 @@ import {
 } from "./chat-store";
 import {
   acquireHallExecutionLock,
+  acquireHallExecutionLockForParticipant,
   assertHallExecutionAllowed,
   releaseHallExecutionLock,
+  releaseHallExecutionLockForParticipant,
 } from "./hall-execution-lock";
 import { buildStructuredHandoffPacket, summarizeStructuredHandoff, type CreateStructuredHandoffInput } from "./hall-handoff";
 import { resolveHallMentionTargets } from "./hall-mention-router";
@@ -83,6 +85,7 @@ import type {
   ChatMessage,
   CollaborationHall,
   CollaborationHallSummary,
+  ExecutionParallelGroup,
   HallExecutionItem,
   HallMessage,
   HallParticipant,
@@ -1139,6 +1142,47 @@ function sanitizeExecutionItems(
   return ordered;
 }
 
+function resolveParallelGroups(
+  items: HallExecutionItem[],
+): ExecutionParallelGroup[] {
+  if (items.length === 0) return [];
+  const itemMap = new Map(items.map((item) => [item.participantId, item] as const));
+  const participantToGroup = new Map<string, number>();
+
+  const assigned = new Set<string>();
+  const assignGroup = (participantId: string, groupIndex: number) => {
+    if (assigned.has(participantId)) return;
+    assigned.add(participantId);
+    participantToGroup.set(participantId, groupIndex);
+    const item = itemMap.get(participantId);
+    if (item?.handoffToParticipantId && itemMap.has(item.handoffToParticipantId)) {
+      assignGroup(item.handoffToParticipantId, groupIndex + 1);
+    }
+  };
+
+  let nextGroup = 0;
+  for (const item of items) {
+    if (assigned.has(item.participantId)) continue;
+    assignGroup(item.participantId, nextGroup);
+    nextGroup = Math.max(...participantToGroup.values()) + 1;
+  }
+
+  const maxGroup = Math.max(...participantToGroup.values());
+  const groups: ExecutionParallelGroup[] = [];
+  for (let g = 0; g <= maxGroup; g++) {
+    const groupItems = items.filter(
+      (item) => participantToGroup.get(item.participantId) === g,
+    );
+    if (groupItems.length > 0) {
+      groups.push({
+        items: groupItems,
+        dependsOnGroupIndex: g === 0 ? -1 : g - 1,
+      });
+    }
+  }
+  return groups;
+}
+
 function deriveExecutionItemsFromOrder(
   participants: HallParticipant[],
   participantIds: string[],
@@ -1652,6 +1696,14 @@ export async function assignHallTaskExecution(
       primaryDoneWhen: taskCard.doneWhen,
     },
   );
+  const parallelGroups = resolveParallelGroups(reorderedExecutionItems);
+  const firstParallelGroup = parallelGroups[0];
+  const parallelParticipants = firstParallelGroup
+    ? firstParallelGroup.items
+        .map((item) => findParticipant(context.hall.participants, item.participantId))
+        .filter((p): p is HallParticipant => p !== undefined)
+    : [];
+  const isParallelDispatch = parallelParticipants.length > 1;
   const fallbackNextParticipant = reorderedExecutionOrder[1]
     ? findParticipant(context.hall.participants, reorderedExecutionOrder[1])
     : undefined;
@@ -1668,10 +1720,27 @@ export async function assignHallTaskExecution(
       handoffWhen: buildExecutionItemHandoff(taskCard, ownerParticipant, fallbackNextParticipant, 0, taskCard.doneWhen),
     };
 
-  taskCard = acquireHallExecutionLock(taskCard, {
-    ownerParticipantId: ownerParticipant.participantId,
-    ownerLabel: ownerParticipant.displayName,
-  });
+  if (isParallelDispatch) {
+    for (const participant of parallelParticipants) {
+      taskCard = acquireHallExecutionLockForParticipant(taskCard, {
+        ownerParticipantId: participant.participantId,
+        ownerLabel: participant.displayName,
+      });
+    }
+  } else {
+    taskCard = acquireHallExecutionLock(taskCard, {
+      ownerParticipantId: ownerParticipant.participantId,
+      ownerLabel: ownerParticipant.displayName,
+    });
+  }
+  const activeOwnerIds = isParallelDispatch
+    ? parallelParticipants.map((p) => p.participantId)
+    : [ownerParticipant.participantId];
+  const remainingItems = isParallelDispatch
+    ? reorderedExecutionItems.filter(
+        (item) => !firstParallelGroup.items.some((gi) => gi.participantId === item.participantId),
+      )
+    : reorderedExecutionItems.filter((item) => item.participantId !== ownerParticipant.participantId);
   taskCard = (
     await updateHallTaskCard({
       taskCardId: taskCard.taskCardId,
@@ -1679,9 +1748,12 @@ export async function assignHallTaskExecution(
       status: "in_progress",
       currentOwnerParticipantId: ownerParticipant.participantId,
       currentOwnerLabel: ownerParticipant.displayName,
+      activeOwnerParticipantIds: activeOwnerIds,
+      parallelGroupIndex: 0,
       executionLock: taskCard.executionLock,
-      plannedExecutionOrder: reorderedExecutionOrder.slice(1),
-      plannedExecutionItems: reorderedExecutionItems.filter((item) => item.participantId !== ownerParticipant.participantId),
+      executionLocks: taskCard.executionLocks,
+      plannedExecutionOrder: reorderedExecutionOrder.slice(isParallelDispatch ? parallelParticipants.length : 1),
+      plannedExecutionItems: remainingItems,
       currentExecutionItem: stableOwnerExecutionItem,
       latestSummary: input.note ?? taskCard.latestSummary,
     })
@@ -1711,8 +1783,30 @@ export async function assignHallTaskExecution(
     return `${ownerParticipant.displayName} took this on. First step: ${ownerTask || "move the next execution slice forward"}. ${ownerHandoff ? `Then hand off like this: ${ownerHandoff}` : "Then post the result back to the hall and decide the next handoff."}`;
   })();
   const generatedMessages: HallMessage[] = [];
-  const usedRuntimeChain = canDispatchHallToRuntime(options.toolClient, ownerParticipant);
-  if (usedRuntimeChain) {
+  const dispatchTargets = isParallelDispatch ? parallelParticipants : [ownerParticipant];
+  const allCanUseRuntime = dispatchTargets.every((p) => canDispatchHallToRuntime(options.toolClient, p));
+  if (allCanUseRuntime && isParallelDispatch) {
+    const chainResults = await Promise.all(
+      parallelParticipants.map((participant) => {
+        const item = firstParallelGroup.items.find((i) => i.participantId === participant.participantId);
+        return runHallRuntimeExecutionChain({
+          hall: context.hall,
+          taskCard,
+          participant,
+          task: patchedTask.task,
+          toolClient: options.toolClient!,
+          mode: "execution",
+          note: input.note,
+          targetParticipantIds: [participant.participantId],
+        });
+      }),
+    );
+    for (const result of chainResults) {
+      taskCard = result.taskCard;
+      if (result.task) patchedTask = { ...patchedTask, task: result.task };
+      generatedMessages.push(...result.generatedMessages);
+    }
+  } else if (allCanUseRuntime && !isParallelDispatch) {
     const chain = await runHallRuntimeExecutionChain({
       hall: context.hall,
       taskCard,
@@ -1727,44 +1821,66 @@ export async function assignHallTaskExecution(
     if (chain.task) patchedTask = { ...patchedTask, task: chain.task };
     generatedMessages.push(...chain.generatedMessages);
   } else {
-    const ownerMessage = await appendStreamedGeneratedHallMessage({
-      hallId: context.hall.hallId,
-      kind: "status",
-      participant: ownerParticipant,
-      content: handoffContent,
-      targetParticipantIds: [ownerParticipant.participantId],
-      projectId: taskCard.projectId,
-      taskId: taskCard.taskId,
-      taskCardId: taskCard.taskCardId,
-      roomId: taskCard.roomId,
-      payload: {
+    for (const participant of dispatchTargets) {
+      const item = isParallelDispatch
+        ? firstParallelGroup.items.find((i) => i.participantId === participant.participantId)
+        : stableOwnerExecutionItem;
+      const participantTask = item?.task?.trim();
+      const participantHandoff = item?.handoffWhen?.trim();
+      const content = (() => {
+        if (language === "zh") {
+          return `${participant.displayName} 接棒。先做：${participantTask || "推进第一步执行"}。${participantHandoff ? participantHandoff : "做完就把结果贴回大厅。"}`;
+        }
+        return `${participant.displayName} took this on. First step: ${participantTask || "move the next execution slice forward"}. ${participantHandoff ? `Then hand off like this: ${participantHandoff}` : "Then post the result back to the hall and decide the next handoff."}`;
+      })();
+      const msg = await appendStreamedGeneratedHallMessage({
+        hallId: context.hall.hallId,
+        kind: "status",
+        participant,
+        content,
+        targetParticipantIds: [participant.participantId],
         projectId: taskCard.projectId,
         taskId: taskCard.taskId,
         taskCardId: taskCard.taskCardId,
         roomId: taskCard.roomId,
-        taskStage: taskCard.stage,
-        taskStatus: patchedTask.task.status,
-        nextOwnerParticipantId: ownerParticipant.participantId,
-        status: "execution_started",
-      },
-    });
-    if (ownerMessage) generatedMessages.push(ownerMessage);
+        payload: {
+          projectId: taskCard.projectId,
+          taskId: taskCard.taskId,
+          taskCardId: taskCard.taskCardId,
+          roomId: taskCard.roomId,
+          taskStage: taskCard.stage,
+          taskStatus: patchedTask.task.status,
+          nextOwnerParticipantId: participant.participantId,
+          status: "execution_started",
+        },
+      });
+      if (msg) generatedMessages.push(msg);
+    }
   }
 
   if (taskCard.roomId) {
-    if (!usedRuntimeChain) {
-      await appendChatMessage({
-        roomId: taskCard.roomId,
-        kind: "status",
-        authorRole: toRoomParticipantRole(ownerParticipant),
-        authorLabel: ownerParticipant.displayName,
-        content: handoffContent,
-        payload: {
-          executor: toRoomParticipantRole(ownerParticipant),
-          status: "execution_started",
-          taskStatus: "in_progress",
-        },
-      });
+    if (!allCanUseRuntime) {
+      for (const participant of dispatchTargets) {
+        const item = isParallelDispatch
+          ? firstParallelGroup.items.find((i) => i.participantId === participant.participantId)
+          : stableOwnerExecutionItem;
+        const participantTask = item?.task?.trim();
+        const content = language === "zh"
+          ? `${participant.displayName} 接棒。先做：${participantTask || "推进第一步执行"}。`
+          : `${participant.displayName} took this on. First step: ${participantTask || "move the next execution slice forward"}.`;
+        await appendChatMessage({
+          roomId: taskCard.roomId,
+          kind: "status",
+          authorRole: toRoomParticipantRole(participant),
+          authorLabel: participant.displayName,
+          content,
+          payload: {
+            executor: toRoomParticipantRole(participant),
+            status: "execution_started",
+            taskStatus: "in_progress",
+          },
+        });
+      }
     }
     const linkedRoom = await requireLinkedRoom(taskCard.roomId);
     await publishTaskRoomBridgeEvent({
@@ -1793,10 +1909,14 @@ export async function assignHallTaskExecution(
     action: "hall_task_assign",
     source: "api",
     ok: true,
-    detail: `assigned hall task ${taskCard.projectId}:${taskCard.taskId} to ${ownerParticipant.displayName}`,
+    detail: isParallelDispatch
+      ? `assigned hall task ${taskCard.projectId}:${taskCard.taskId} to ${parallelParticipants.map((p) => p.displayName).join(", ")} (parallel)`
+      : `assigned hall task ${taskCard.projectId}:${taskCard.taskId} to ${ownerParticipant.displayName}`,
     metadata: {
       taskCardId: taskCard.taskCardId,
       ownerParticipantId: ownerParticipant.participantId,
+      activeOwnerParticipantIds: activeOwnerIds,
+      parallelGroupIndex: 0,
     },
   });
 
@@ -2101,6 +2221,79 @@ export async function recordHallTaskHandoff(
   const expectedNextOwnerParticipantId = getExpectedNextExecutionOwner(taskCard);
   const handoffMatchesQueue = !expectedNextOwnerParticipantId || expectedNextOwnerParticipantId === toParticipant.participantId;
 
+  const activeParallelOwners = taskCard.activeOwnerParticipantIds ?? [];
+  const isParallelHandoff = activeParallelOwners.length > 1 && activeParallelOwners.includes(fromParticipant.participantId);
+  const remainingParallelOwners = activeParallelOwners.filter((id) => id !== fromParticipant.participantId);
+
+  if (isParallelHandoff && remainingParallelOwners.length > 0) {
+    taskCard = releaseHallExecutionLockForParticipant(taskCard, fromParticipant.participantId, `handoff_partial:${toParticipant.participantId}`);
+    taskCard = (
+      await updateHallTaskCard({
+        taskCardId: taskCard.taskCardId,
+        stage: "execution",
+        status: "in_progress",
+        activeOwnerParticipantIds: remainingParallelOwners,
+        executionLocks: taskCard.executionLocks,
+        currentOwnerParticipantId: remainingParallelOwners[0] ?? taskCard.currentOwnerParticipantId,
+        currentOwnerLabel: fromParticipant.displayName,
+        blockers: handoff.blockers,
+        requiresInputFrom: handoff.requiresInputFrom,
+        doneWhen: handoff.doneWhen,
+        latestSummary: handoff.currentResult,
+      })
+    ).taskCard;
+
+    const partialHandoffMessage = await appendStreamedGeneratedHallMessage({
+      hallId: context.hall.hallId,
+      kind: "handoff",
+      participant: fromParticipant,
+      content: handoffSummary,
+      targetParticipantIds: [toParticipant.participantId],
+      projectId: taskCard.projectId,
+      taskId: taskCard.taskId,
+      taskCardId: taskCard.taskCardId,
+      roomId: taskCard.roomId,
+      payload: {
+        projectId: taskCard.projectId,
+        taskId: taskCard.taskId,
+        taskCardId: taskCard.taskCardId,
+        roomId: taskCard.roomId,
+        handoff,
+        nextOwnerParticipantId: toParticipant.participantId,
+        doneWhen: handoff.doneWhen,
+        taskStatus: "in_progress",
+        taskStage: taskCard.stage,
+        status: "parallel_handoff_partial",
+      },
+    });
+    const generatedMessages: HallMessage[] = [];
+    if (partialHandoffMessage) generatedMessages.push(partialHandoffMessage);
+
+    const refreshed = await refreshHallAndTaskSummary(context.hall.hallId, taskCard);
+    await appendOperationAudit({
+      action: "hall_task_handoff",
+      source: "api",
+      ok: true,
+      detail: `partial parallel handoff from ${fromParticipant.displayName} in ${taskCard.projectId}:${taskCard.taskId} (${remainingParallelOwners.length} agents still running)`,
+      metadata: {
+        taskCardId: taskCard.taskCardId,
+        fromParticipantId: fromParticipant.participantId,
+        toParticipantId: toParticipant.participantId,
+        remainingParallelOwners,
+      },
+    });
+
+    return {
+      hall: refreshed.hall,
+      hallSummary: refreshed.hallSummary,
+      taskCard: refreshed.taskCard,
+      taskSummary: refreshed.taskSummary,
+      task: undefined,
+      roomId: taskCard.roomId,
+      generatedMessages,
+    };
+  }
+
   taskCard = releaseHallExecutionLock(taskCard, `handoff:${toParticipant.participantId}`);
   taskCard = (
     await updateHallTaskCard({
@@ -2110,6 +2303,8 @@ export async function recordHallTaskHandoff(
       currentOwnerParticipantId: toParticipant.participantId,
       currentOwnerLabel: toParticipant.displayName,
       executionLock: taskCard.executionLock,
+      activeOwnerParticipantIds: undefined,
+      parallelGroupIndex: undefined,
       blockers: handoff.blockers,
       requiresInputFrom: handoff.requiresInputFrom,
       doneWhen: handoff.doneWhen,
@@ -2164,43 +2359,93 @@ export async function recordHallTaskHandoff(
     }));
   }
   const shouldAutoDispatchToNextOwner = handoffMatchesQueue || !expectedNextOwnerParticipantId;
-  if (shouldAutoDispatchToNextOwner && canDispatchHallToRuntime(options.toolClient, toParticipant)) {
-    const placeholderDraftId = beginHallDraftReply({
-      hallId: context.hall.hallId,
-      taskCardId: taskCard.taskCardId,
-      projectId: taskCard.projectId,
-      taskId: taskCard.taskId,
-      roomId: taskCard.roomId,
-      authorParticipantId: toParticipant.participantId,
-      authorLabel: toParticipant.displayName,
-      authorSemanticRole: toParticipant.semanticRole,
-      messageKind: "handoff",
-      content: "",
-    });
-    try {
-      const chain = await runHallRuntimeExecutionChain({
-        hall: context.hall,
-        taskCard,
-        participant: toParticipant,
-        task: patchedTask.task,
-        toolClient: options.toolClient!,
-        mode: "handoff",
-        handoff,
-        targetParticipantIds: [toParticipant.participantId],
-      });
-      taskCard = chain.taskCard;
-      if (chain.task) patchedTask = { ...patchedTask, task: chain.task };
-      generatedMessages.push(...chain.generatedMessages);
-    } finally {
-      abortHallDraftReply({
+  if (shouldAutoDispatchToNextOwner) {
+    const nextParallelGroups = resolveParallelGroups(taskCard.plannedExecutionItems);
+    const nextParallelGroup = nextParallelGroups[0];
+    const nextParallelParticipants = nextParallelGroup
+      ? nextParallelGroup.items
+          .map((item) => findParticipant(context.hall.participants, item.participantId))
+          .filter((p): p is HallParticipant => p !== undefined)
+      : [];
+    const isNextParallel = nextParallelParticipants.length > 1
+      && nextParallelParticipants.every((p) => canDispatchHallToRuntime(options.toolClient, p));
+
+    if (isNextParallel) {
+      for (const participant of nextParallelParticipants) {
+        taskCard = acquireHallExecutionLockForParticipant(taskCard, {
+          ownerParticipantId: participant.participantId,
+          ownerLabel: participant.displayName,
+        });
+      }
+      const nextActiveIds = nextParallelParticipants.map((p) => p.participantId);
+      taskCard = (await updateHallTaskCard({
+        taskCardId: taskCard.taskCardId,
+        activeOwnerParticipantIds: nextActiveIds,
+        parallelGroupIndex: (taskCard.parallelGroupIndex ?? 0) + 1,
+        executionLocks: taskCard.executionLocks,
+        currentOwnerParticipantId: nextActiveIds[0],
+        currentOwnerLabel: nextParallelParticipants[0].displayName,
+        plannedExecutionItems: taskCard.plannedExecutionItems.filter(
+          (item) => !nextParallelGroup.items.some((gi) => gi.participantId === item.participantId),
+        ),
+      })).taskCard;
+      const chainResults = await Promise.all(
+        nextParallelParticipants.map((participant) =>
+          runHallRuntimeExecutionChain({
+            hall: context.hall,
+            taskCard,
+            participant,
+            task: patchedTask.task,
+            toolClient: options.toolClient!,
+            mode: "handoff",
+            handoff,
+            targetParticipantIds: [participant.participantId],
+          }),
+        ),
+      );
+      for (const result of chainResults) {
+        taskCard = result.taskCard;
+        if (result.task) patchedTask = { ...patchedTask, task: result.task };
+        generatedMessages.push(...result.generatedMessages);
+      }
+    } else if (canDispatchHallToRuntime(options.toolClient, toParticipant)) {
+      const placeholderDraftId = beginHallDraftReply({
         hallId: context.hall.hallId,
         taskCardId: taskCard.taskCardId,
         projectId: taskCard.projectId,
         taskId: taskCard.taskId,
         roomId: taskCard.roomId,
-        draftId: placeholderDraftId,
-        reason: "handoff_runtime_started",
+        authorParticipantId: toParticipant.participantId,
+        authorLabel: toParticipant.displayName,
+        authorSemanticRole: toParticipant.semanticRole,
+        messageKind: "handoff",
+        content: "",
       });
+      try {
+        const chain = await runHallRuntimeExecutionChain({
+          hall: context.hall,
+          taskCard,
+          participant: toParticipant,
+          task: patchedTask.task,
+          toolClient: options.toolClient!,
+          mode: "handoff",
+          handoff,
+          targetParticipantIds: [toParticipant.participantId],
+        });
+        taskCard = chain.taskCard;
+        if (chain.task) patchedTask = { ...patchedTask, task: chain.task };
+        generatedMessages.push(...chain.generatedMessages);
+      } finally {
+        abortHallDraftReply({
+          hallId: context.hall.hallId,
+          taskCardId: taskCard.taskCardId,
+          projectId: taskCard.projectId,
+          taskId: taskCard.taskId,
+          roomId: taskCard.roomId,
+          draftId: placeholderDraftId,
+          reason: "handoff_runtime_started",
+        });
+      }
     }
   } else {
     const handoffMessage = await appendStreamedGeneratedHallMessage({

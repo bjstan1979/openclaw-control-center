@@ -154,7 +154,6 @@ export function renderCollaborationHall(input: RenderCollaborationHallInput): st
               </div>
             </div>
             <div class="hall-thread" data-hall-thread>${renderHallMessages(input.messages, input.language)}</div>
-            <div class="hall-decision-panel" data-hall-decision-panel ${renderInitialDecisionPanel(input.selectedTaskCard, input.selectedTask, input.hall.participants, input.language) ? "" : "hidden"}>${renderInitialDecisionPanel(input.selectedTaskCard, input.selectedTask, input.hall.participants, input.language)}</div>
             <div class="hall-typing-strip" data-hall-typing-strip hidden></div>
             <div class="hall-composer-shell">
               <div class="hall-handoff-panel" data-hall-handoff-panel hidden></div>
@@ -271,6 +270,8 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
   const textRemove = ${JSON.stringify(pickUiText(language, "Remove", "移除"))};
   const textActionItems = ${JSON.stringify(pickUiText(language, "Action items", "行动项"))};
   const textActionTask = ${JSON.stringify(pickUiText(language, "Task", "任务"))};
+  const textContinueStep = ${JSON.stringify(pickUiText(language, "Continue this execution step", "继续这一执行步骤"))};
+  const textWhen = ${JSON.stringify(pickUiText(language, "When", "交接条件"))};
   const textActionHandoffTo = ${JSON.stringify(pickUiText(language, "Hand off to", "交给谁"))};
   const textActionHandoffWhen = ${JSON.stringify(pickUiText(language, "Handoff when", "交接条件"))};
   const textNoHandoff = ${JSON.stringify(pickUiText(language, "No handoff", "不交接"))};
@@ -323,7 +324,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
   const askDecisionPrompt = ${JSON.stringify("请先收口并指定执行者。")};
   const taskList = root.querySelector('[data-hall-task-list]');
   const thread = root.querySelector('[data-hall-thread]');
-  const decisionPanel = root.querySelector('[data-hall-decision-panel]');
   const typingStrip = root.querySelector('[data-hall-typing-strip]');
   const detail = root.querySelector('[data-hall-detail]');
   const contextPane = root.querySelector('[data-hall-context-pane]');
@@ -377,7 +377,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     blockers: '',
     requiresInputFrom: '',
   };
-  let decisionExpanded = false;
   let composerMode = selectedTaskCardId ? 'reply' : 'task';
   let threadAutoFollow = true;
   let pendingComposerSubmitAfterComposition = false;
@@ -740,11 +739,9 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     selectedTaskId = '';
     selectedTaskDetailPayload = null;
     executionPlannerOpen = false;
-    decisionExpanded = false;
     syncTaskUrl('');
     renderTaskList(hallTaskCards);
     renderDetail(null);
-    renderDecisionPanel(null);
     renderVisibleThread();
     renderThreadHeader();
     renderMemberStrip();
@@ -1024,7 +1021,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     const participants = Array.isArray(bootstrap.participants) ? bootstrap.participants : [];
     memberStrip.innerHTML = participants.map((participant) => {
       const presence = participantPresence(participant.participantId);
-      const title = participant.displayName + ' · ' + presence.label + ' · ' + roleLabel(participant.semanticRole);
+      const title = participant.displayName;
       return '<button type="button" class="hall-member-pill hall-member-pill--' + esc(presence.state) + '" data-status="' + esc(presence.state) + '" title="' + esc(title) + '" aria-label="' + esc(title) + '" data-hall-mention="' + esc(participant.displayName) + '" onclick="return window.__openclawHallInsertMention ? window.__openclawHallInsertMention(this.getAttribute(\\'data-hall-mention\\') || \\'\\') : true">' +
         hallAvatarMarkup(participant.displayName, 'hall-member-avatar') +
         '<span class="hall-member-status-dot" aria-hidden="true"></span>' +
@@ -1046,10 +1043,21 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     }
     const taskCard = currentTaskCard();
     if (taskCard?.currentOwnerLabel && hasLockedActiveExecution(taskCard)) {
+      const activeIds = taskCard.activeOwnerParticipantIds || [];
       const currentTask = decisionCardStepMeta(taskCard).task;
-      toolbarMetaNote.textContent = currentTask
-        ? (taskCard.currentOwnerLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow) + ' · ' + currentTask)
-        : (taskCard.currentOwnerLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow));
+      if (activeIds.length > 1) {
+        const activeLabels = activeIds.map((id) => participantLabel(id)).filter(Boolean);
+        const parallelLabel = activeLabels.length > 2
+          ? activeLabels.slice(0, 2).join(' · ') + ' +' + (activeLabels.length - 2)
+          : activeLabels.join(' · ');
+        toolbarMetaNote.textContent = currentTask
+          ? (parallelLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow) + ' · ' + currentTask)
+          : (parallelLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow));
+      } else {
+        toolbarMetaNote.textContent = currentTask
+          ? (taskCard.currentOwnerLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow) + ' · ' + currentTask)
+          : (taskCard.currentOwnerLabel + ' ' + (taskCard.stage === 'review' ? textReviewingNow : textExecutingNow));
+      }
       return;
     }
     toolbarMetaNote.textContent = (bootstrap.participants || []).length + ' ' + ${JSON.stringify(pickUiText(language, "agents live in this hall.", "个 agent 正在大厅里。"))};
@@ -1336,7 +1344,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
         renderTaskList(hallTaskCards);
         renderThreadHeader();
         renderDetail(null);
-        renderDecisionPanel(null);
         renderVisibleThread();
         syncComposerMode();
         if (button instanceof HTMLElement) button.focus();
@@ -1352,67 +1359,14 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     payload = withFreshestTaskCard(payload);
     const forceVisible = options.forceVisible === true;
     const taskCard = payload?.taskCard;
-    const activeDrafts = visibleDrafts();
-    const hasDiscussionOutcome = Boolean(
-      String(taskCard?.proposal || '').trim()
-      || String(taskCard?.latestSummary || '').trim(),
-    );
-    const hasExecutionPlan = (taskCard?.plannedExecutionOrder || []).length > 0 || (taskCard?.plannedExecutionItems || []).length > 0;
-    const hasExecutionEntryPoint = Boolean(
-      hasExecutionPlan
-      || taskCard?.currentOwnerParticipantId
-      || taskCard?.currentExecutionItem,
-    );
-    const hasFinalizedDecision = Boolean(
-      taskCard?.decision
-      || taskCard?.doneWhen
-      || hasDiscussionOutcome
-      || taskCard?.currentOwnerParticipantId
-      || taskCard?.currentExecutionItem
-      || taskCard?.discussionCycle?.closedAt
-      || (taskCard && taskCard.stage !== 'discussion')
-      || hasExecutionPlan
-    );
-    const shouldHideWhileDiscussionContinues = activeDrafts.length > 0 && !hasExecutionEntryPoint;
-    if (!taskCard || (!forceVisible && (!hasFinalizedDecision || shouldHideWhileDiscussionContinues))) {
+    if (!taskCard || !executionPlannerOpen) {
       return '';
     }
-    const queueLabels = (taskCard.plannedExecutionOrder || []).map((participantId) => participantLabel(participantId));
     const actionItems = Array.isArray(taskCard.plannedExecutionItems) && taskCard.plannedExecutionItems.length > 0
       ? taskCard.plannedExecutionItems
       : buildExecutionItemsDraft(taskCard, taskCard.plannedExecutionOrder || [], []);
-    const ownerMeta = decisionCardOwnerMeta(taskCard);
-    const stepMeta = decisionCardStepMeta(taskCard);
     const activeQueue = executionPlannerOpen ? executionOrderDraft : (taskCard.plannedExecutionOrder || []);
     const activeItems = executionPlannerOpen ? executionItemsDraft : actionItems;
-    const compactSummaryText = taskCard.decision || taskCard.proposal || taskCard.latestSummary || taskCard.description || '';
-    const isExpanded = decisionExpanded;
-    const primaryButtonLabel = decisionPrimaryButtonLabel(taskCard);
-    const orderButtonLabel = decisionSecondaryOrderLabel(taskCard);
-    const taskArtifacts = payload?.task?.artifacts || [];
-    const summaryStats = [
-      textStage + '：' + decisionCardStageText(taskCard),
-      ownerMeta.label ? ownerMeta.heading + '：' + ownerMeta.label : '',
-      stepMeta.task ? stepMeta.heading + '：' + stepMeta.task : '',
-    ].filter(Boolean);
-    const queuePreview = activeItems.length > 0
-      ? '<div class="hall-decision-queue">' +
-          activeItems.map((item, index) => {
-            const nextParticipantId = item.handoffToParticipantId || activeQueue[index + 1];
-            const nextParticipantLabel = nextParticipantId ? participantLabel(nextParticipantId) : '';
-            return (
-            '<div class="hall-decision-queue-item">' +
-              hallAvatarMarkup(participantLabel(item.participantId), 'hall-decision-queue-avatar') +
-              '<div><strong>' + esc(participantLabel(item.participantId)) + '</strong>' +
-                '<span>#' + esc(String(index + 1)) + ' · ' + esc(item.task) + '</span>' +
-                (nextParticipantLabel ? '<span>' + esc(textActionThenTo) + ' @' + esc(nextParticipantLabel) + '</span>' : '') +
-                (item.handoffWhen ? '<span>' + esc(textActionThen) + ' · ' + esc(item.handoffWhen) + '</span>' : '') +
-              '</div>' +
-            '</div>'
-            );
-          }).join('') +
-        '</div>'
-      : '';
     const plannerRows = activeQueue.length > 0
       ? activeItems.map((item, index) => {
         const lockedExecutionParticipantId = hasLockedActiveExecution(taskCard)
@@ -1459,70 +1413,23 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
         '</button>'
       ).join('') +
     '</div></div>';
-    const plannerPanel = executionPlannerOpen
-      ? '<div class="hall-order-planner ' + (plannerIsEmpty ? 'hall-order-planner--empty' : '') + '">' +
-          '<div class="hall-order-planner-head"><strong>' + esc(textPlanningOrder) + '</strong></div>' +
-          (plannerIsEmpty
-            ? '<div class="hall-order-empty-state">' +
-                '<div class="hall-order-empty">' + esc(textNoActionItems) + '</div>' +
-                plannerAvailableMarkup +
-              '</div>'
-            : '<div class="hall-order-list">' + plannerRows + '</div>' + plannerAvailableMarkup) +
-          '<div class="hall-decision-actions ' + (plannerIsEmpty ? 'hall-decision-actions--planner-empty' : '') + '">' +
-            '<button type="button" class="hall-secondary-button" data-hall-order-save>' + esc(textSaveOrder) + '</button>' +
-            '<button type="button" class="hall-secondary-button" data-hall-order-cancel>' + esc(textCancelOrder) + '</button>' +
-          '</div>' +
-        '</div>'
-      : '';
-    if (executionPlannerOpen) {
-      return (
-        '<section class="hall-decision-card hall-decision-card--planner ' + (plannerIsEmpty ? 'is-empty' : '') + '" data-hall-current-console="planner">' +
-          plannerPanel +
-        '</section>'
-      );
-    }
+    const plannerPanel = '<div class="hall-order-planner ' + (plannerIsEmpty ? 'hall-order-planner--empty' : '') + '">' +
+        '<div class="hall-order-planner-head"><strong>' + esc(textPlanningOrder) + '</strong></div>' +
+        (plannerIsEmpty
+          ? '<div class="hall-order-empty-state">' +
+              '<div class="hall-order-empty">' + esc(textNoActionItems) + '</div>' +
+              plannerAvailableMarkup +
+            '</div>'
+          : '<div class="hall-order-list">' + plannerRows + '</div>' + plannerAvailableMarkup) +
+        '<div class="hall-decision-actions ' + (plannerIsEmpty ? 'hall-decision-actions--planner-empty' : '') + '">' +
+          '<button type="button" class="hall-secondary-button" data-hall-order-save>' + esc(textSaveOrder) + '</button>' +
+          '<button type="button" class="hall-secondary-button" data-hall-order-cancel>' + esc(textCancelOrder) + '</button>' +
+        '</div>' +
+      '</div>';
     return (
-            '<section class="hall-decision-card ' + (isExpanded ? 'is-expanded' : 'is-collapsed') + '" data-hall-current-console="summary">' +
-              '<div class="hall-decision-top">' +
-                '<div class="hall-decision-copy">' +
-                  '<div class="hall-decision-label">' + esc(textDiscussionResult) + '</div>' +
-                  '<div class="hall-decision-title-row">' +
-                    '<div class="hall-decision-inline-summary">' + (isExpanded ? renderMarkdownHtml(compactSummaryText || taskCard.title || '') : esc((compactSummaryText || taskCard.title || '').replace(/\s+/g, ' ').trim().slice(0, 120) + ((compactSummaryText || taskCard.title || '').length > 120 ? '…' : ''))) + '</div>' +
-                    '<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">' + esc(isExpanded ? textHideDetails : textShowDetails) + '</button>' +
-                  '</div>' +
-                  (isExpanded && summaryStats.length > 0
-                    ? '<div class="hall-decision-summary hall-decision-summary--compact">' +
-                        summaryStats
-                          .map((item) => '<span class="hall-decision-meta-line-item" title="' + esc(item) + '">' + esc(item) + '</span>')
-                          .join('<span class="hall-decision-meta-sep">·</span>') +
-                      '</div>'
-                    : '') +
-                '</div>' +
-              '</div>' +
-              (isExpanded && !executionPlannerOpen ? (
-                '<div class="hall-decision-body">' +
-                  '<div class="hall-decision-row"><strong>' + esc(textThread) + '</strong><span title="' + esc(taskCard.title || '') + '">' + esc(taskCard.title || '-') + '</span></div>' +
-                  (taskCard.decision ? '<div class="hall-decision-row"><strong>' + esc(textDecision) + '</strong><span class="hall-decision-value">' + renderMarkdownHtml(taskCard.decision) + '</span></div>' : '') +
-                (ownerMeta.label ? '<div class="hall-decision-row"><strong>' + esc(ownerMeta.heading) + '</strong><span title="' + esc(ownerMeta.label) + '">' + esc(ownerMeta.label) + '</span></div>' : '') +
-                  (stepMeta.task ? '<div class="hall-decision-row"><strong>' + esc(stepMeta.heading) + '</strong><span title="' + esc(stepMeta.task) + '">' + esc(stepMeta.task) + '</span></div>' : '') +
-                  (taskArtifacts.length > 0 ? '<div class="hall-decision-row"><strong>' + esc(textTaskArtifacts) + '</strong><div class="hall-artifact-list">' + renderArtifactChips(taskArtifacts) + '</div></div>' : '') +
-                  queuePreview +
-                '</div>'
-              ) : '') +
-              '<div class="hall-decision-actions">' +
-                (shouldShowDecisionPrimaryAction(taskCard)
-                  ? '<button type="button" class="hall-button" data-hall-start-execution onclick="return window.__openclawHallAssignOwner ? window.__openclawHallAssignOwner() : false">' + esc(primaryButtonLabel) + '</button>'
-                  : '') +
-                '<button type="button" class="hall-secondary-button hall-secondary-button--accent" data-hall-plan-order onclick="return window.__openclawHallSetExecutionOrder ? window.__openclawHallSetExecutionOrder() : false">' + esc(orderButtonLabel) + '</button>' +
-                '<button type="button" class="hall-secondary-button" data-hall-continue-discussion onclick="return window.__openclawHallContinueDiscussion ? window.__openclawHallContinueDiscussion() : false">' + esc(textContinueDiscussion) + '</button>' +
-              '</div>' +
-              '<div class="hall-decision-helper">' + esc((hasPendingStartablePlan(taskCard) || taskCard.stage === 'discussion')
-                ? (firstPlannedOwnerId(taskCard)
-                  ? textExecutionStartHint
-                  : textPlannerHint)
-                : textExecutionThreadHint) + '</div>' +
-              plannerPanel +
-            '</section>'
+      '<section class="hall-decision-card hall-decision-card--planner ' + (plannerIsEmpty ? 'is-empty' : '') + '" data-hall-current-console="planner">' +
+        plannerPanel +
+      '</section>'
     );
   };
 
@@ -1731,14 +1638,7 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     })
     .filter(Boolean);
 
-  const renderDecisionPanel = (payload) => {
-    if (!decisionPanel) return;
-    const markup = payload ? renderDecisionInline(payload) : '';
-    decisionPanel.innerHTML = markup;
-    decisionPanel.hidden = !markup;
-    paintHallPixelAvatars(decisionPanel);
-  };
-
+  
   const renderNewTaskDraftState = () => {
     if (!thread) return;
     thread.innerHTML = '<div class="hall-empty hall-empty--chat hall-empty--draft">' +
@@ -1751,9 +1651,16 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
 
   const renderVisibleThread = () => {
     syncPlannerMode();
+    if (executionPlannerOpen && selectedTaskDetailPayload) {
+      const plannerHtml = renderDecisionInline(selectedTaskDetailPayload);
+      if (thread) {
+        thread.innerHTML = plannerHtml;
+        paintHallPixelAvatars(thread);
+      }
+      return;
+    }
     if (composerMode === 'task' && !selectedTaskCardId) {
       renderNewTaskDraftState();
-      renderDecisionPanel(null);
       return;
     }
     const scopedMessages = currentThreadMessages().filter((message) => {
@@ -1763,7 +1670,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     const merged = [...scopedMessages, ...draftMessages()]
       .sort((a, b) => Date.parse(a.createdAt || '') - Date.parse(b.createdAt || ''));
     renderThread(merged);
-    renderDecisionPanel(selectedTaskCardId ? selectedTaskDetailPayload : null);
     renderTypingStrip();
     renderHandoffPanel();
   };
@@ -1823,8 +1729,40 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     const roomLink = taskCard.roomId
       ? '<a class="hall-thread-link" href="?section=collaboration&roomId=' + encodeURIComponent(taskCard.roomId) + '">' + esc(textOpenDetailThread) + '</a>'
       : '';
+    const hasDecisionContent = Boolean(
+      taskCard.decision
+      || taskCard.proposal
+      || taskCard.doneWhen
+      || taskCard.discussionCycle?.closedAt,
+    );
+    const decisionActionItems = Array.isArray(taskCard.plannedExecutionItems) && taskCard.plannedExecutionItems.length > 0
+      ? taskCard.plannedExecutionItems
+      : (taskCard.plannedExecutionOrder || []).map((participantId, index, list) => ({
+          itemId: (taskCard.taskCardId || '') + ':' + participantId + ':' + index,
+          participantId,
+          task: '',
+          handoffToParticipantId: list[index + 1],
+          handoffWhen: '',
+        }));
+    const decisionSectionMarkup = hasDecisionContent
+      ? '<div class="hall-detail-group"><h4>' + esc(textDiscussionResult) + '</h4>'
+        + (taskCard.decision ? '<div class="hall-detail-meta">' + renderMarkdownHtml(taskCard.decision) + '</div>' : '')
+        + (!taskCard.decision && taskCard.proposal ? '<div class="hall-detail-meta">' + renderMarkdownHtml(taskCard.proposal) + '</div>' : '')
+        + (taskCard.doneWhen ? '<div class="hall-detail-meta"><strong>' + esc(textDoneWhen) + '</strong> ' + esc(taskCard.doneWhen) + '</div>' : '')
+        + (decisionActionItems.length > 0
+          ? '<div class="hall-detail-meta">' + decisionActionItems.map((item, index) => {
+              const nextLabel = item.handoffToParticipantId ? participantLabel(item.handoffToParticipantId) : '';
+              const lines = [String(index + 1) + '. ' + esc(participantLabel(item.participantId)) + '：' + esc(item.task || textContinueStep)];
+              if (nextLabel) lines.push(esc(textActionThenTo) + ' @' + esc(nextLabel));
+              if (item.handoffWhen) lines.push(esc(textWhen) + '：' + esc(item.handoffWhen));
+              return lines.join(' · ');
+            }).join('<br/>') + '</div>'
+          : '')
+        + '</div>'
+      : '';
     detail.innerHTML =
       '<div class="hall-detail-list">' +
+        decisionSectionMarkup +
         '<div class="hall-detail-group"><h4>' + esc(textExecutionPlan) + '</h4>' +
           '<div class="hall-detail-meta"><span class="hall-stage-pill">' + esc(decisionCardStageText(taskCard)) + '</span> <span class="hall-stage-pill">' + esc(taskCard.status) + '</span></div>' +
           '<div class="hall-detail-meta" style="margin-top:8px;">' + esc(ownerMeta.heading) + ': ' + esc(ownerMeta.label || '-') + '</div>' +
@@ -1921,7 +1859,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
       selectedTaskId = '';
       selectedTaskDetailPayload = null;
       executionPlannerOpen = false;
-      decisionExpanded = false;
       closeHandoffPanel();
       syncTaskUrl('');
     }
@@ -1942,7 +1879,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     } else {
       selectedTaskDetailPayload = null;
       renderDetail(null);
-      renderDecisionPanel(null);
     }
     renderThreadHeader();
     syncComposerMode();
@@ -2049,7 +1985,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     if (!selectedTaskCardId) {
       selectedTaskDetailPayload = null;
       renderDetail(null);
-      renderDecisionPanel(null);
       renderVisibleThread();
       return;
     }
@@ -2293,7 +2228,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
   window.__openclawHallSetExecutionOrder = () => {
     executionPlannerOpen = !executionPlannerOpen;
     if (executionPlannerOpen) {
-      decisionExpanded = false;
       syncExecutionOrderDraft(selectedTaskDetailPayload?.taskCard);
       executionOrderDraftDirty = false;
     }
@@ -2343,11 +2277,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
       setFlash('已切回讨论，可以继续追问。');
     };
     void reopen().catch((error) => setFlash(error instanceof Error ? error.message : String(error)));
-    return false;
-  };
-  window.__openclawHallToggleDecisionDetails = () => {
-    decisionExpanded = !decisionExpanded;
-    renderVisibleThread();
     return false;
   };
   window.__openclawHallHandleComposerKeydown = (event) => {
@@ -2410,7 +2339,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     selectedTaskDetailPayload = null;
     if (threadActionsMenu instanceof HTMLDetailsElement) threadActionsMenu.open = false;
     executionPlannerOpen = false;
-    decisionExpanded = false;
     composerMode = 'reply';
     syncTaskUrl('');
     await loadHall(true);
@@ -2436,7 +2364,6 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
     selectedTaskDetailPayload = null;
     if (threadActionsMenu instanceof HTMLDetailsElement) threadActionsMenu.open = false;
     executionPlannerOpen = false;
-    decisionExpanded = false;
     composerMode = 'reply';
     syncTaskUrl('');
     await loadHall(true);
@@ -2538,15 +2465,9 @@ export function renderCollaborationHallClientScript(language: UiLanguage): strin
       patchExecutionItemDraft(handoffToParticipantId, { handoffToParticipantId: target.value || '' });
     }
   };
-  decisionPanel?.addEventListener('click', handleDecisionInteraction);
   thread?.addEventListener('click', handleDecisionInteraction);
-  decisionPanel?.addEventListener('input', handleDecisionInputs);
   thread?.addEventListener('input', handleDecisionInputs);
-  decisionPanel?.addEventListener('change', handleDecisionInputs);
   thread?.addEventListener('change', handleDecisionInputs);
-  decisionPanel?.addEventListener('focusin', (event) => {
-    if (isExecutionPlannerField(event.target)) markExecutionPlannerEditing();
-  });
   thread?.addEventListener('focusin', (event) => {
     if (isExecutionPlannerField(event.target)) markExecutionPlannerEditing();
   });
@@ -3005,8 +2926,37 @@ function renderHallDetail(
       ? `${pickUiText(language, "Start execution with", "开始执行（")}${decisionState.ownerLabel}${pickUiText(language, ")", "）")}`
       : `${pickUiText(language, "Start execution", "开始执行当前计划")} · ${decisionState.ownerLabel}`)
     : "";
+  const hasDecisionContent = Boolean(
+    selectedTaskCard.decision
+    || selectedTaskCard.proposal
+    || selectedTaskCard.doneWhen
+    || selectedTaskCard.discussionCycle?.closedAt,
+  );
+  const actionItems = (selectedTaskCard.plannedExecutionItems || []).length > 0
+    ? (selectedTaskCard.plannedExecutionItems || [])
+    : (selectedTaskCard.plannedExecutionOrder || []).map((participantId, index, list) => ({
+        itemId: `${selectedTaskCard.taskCardId}:${participantId}:${index}`,
+        participantId,
+        task: "",
+        handoffToParticipantId: list[index + 1],
+        handoffWhen: "",
+      }));
+  const participantLabel = (participantId: string): string => participantMap.get(participantId) || participantId;
   return `
     <div class="hall-detail-list">
+      ${hasDecisionContent ? `<div class="hall-detail-group">
+        <h4>${escapeHtml(pickUiText(language, "Discussion result", "讨论结论"))}</h4>
+        ${selectedTaskCard.decision ? `<div class="hall-detail-meta">${renderMarkdown(selectedTaskCard.decision)}</div>` : ""}
+        ${!selectedTaskCard.decision && selectedTaskCard.proposal ? `<div class="hall-detail-meta">${renderMarkdown(selectedTaskCard.proposal)}</div>` : ""}
+        ${selectedTaskCard.doneWhen ? `<div class="hall-detail-meta"><strong>${escapeHtml(pickUiText(language, "Done when", "完成标准"))}</strong> ${escapeHtml(selectedTaskCard.doneWhen)}</div>` : ""}
+        ${actionItems.length > 0 ? `<div class="hall-detail-meta">${actionItems.map((item, index) => {
+          const nextLabel = item.handoffToParticipantId ? participantLabel(item.handoffToParticipantId) : "";
+          const lines = [`${index + 1}. ${participantLabel(item.participantId)}：${item.task || pickUiText(language, "Continue this execution step", "继续这一执行步骤")}`];
+          if (nextLabel) lines.push(`${pickUiText(language, "Then hand off to", "然后交给")} @${nextLabel}`);
+          if (item.handoffWhen) lines.push(`${pickUiText(language, "When", "交接条件")}：${item.handoffWhen}`);
+          return escapeHtml(lines.join(" · "));
+        }).join("<br/>")}</div>` : ""}
+      </div>` : ""}
       <div class="hall-detail-group">
         <h4>${escapeHtml(pickUiText(language, "Execution plan", "执行计划"))}</h4>
         <div class="hall-detail-meta"><span class="hall-stage-pill">${escapeHtml(decisionState.stageText)}</span> <span class="hall-stage-pill">${escapeHtml(selectedTaskCard.status)}</span></div>
@@ -3040,114 +2990,6 @@ function renderHallDetail(
   `;
 }
 
-function renderInitialDecisionPanel(
-  selectedTaskCard: HallTaskCard | undefined,
-  selectedTask: ProjectTask | undefined,
-  participants: HallParticipant[],
-  language: UiLanguage,
-): string {
-  if (!selectedTaskCard) return "";
-  const hasDiscussionOutcome = Boolean(
-    String(selectedTaskCard.proposal || "").trim()
-    || String(selectedTaskCard.latestSummary || "").trim(),
-  );
-  const hasExecutionPlan = (selectedTaskCard.plannedExecutionOrder || []).length > 0 || (selectedTaskCard.plannedExecutionItems || []).length > 0;
-  const hasVisibleDecision = Boolean(
-    selectedTaskCard.decision
-    || selectedTaskCard.doneWhen
-    || hasDiscussionOutcome
-    || selectedTaskCard.currentOwnerParticipantId
-    || selectedTaskCard.currentExecutionItem
-    || selectedTaskCard.discussionCycle?.closedAt
-    || selectedTaskCard.stage !== "discussion"
-    || hasExecutionPlan
-  );
-  if (!hasVisibleDecision) return "";
-  const participantMap = new Map(participants.map((participant) => [participant.participantId, participant.displayName]));
-  const participantLabel = (participantId: string): string => participantMap.get(participantId) || participantId;
-  const queueLabels = (selectedTaskCard.plannedExecutionOrder || []).map((participantId) => participantLabel(participantId));
-  const actionItems = (selectedTaskCard.plannedExecutionItems || []).length > 0
-    ? (selectedTaskCard.plannedExecutionItems || [])
-    : (selectedTaskCard.plannedExecutionOrder || []).map((participantId, index, list) => ({
-        itemId: `${selectedTaskCard.taskCardId}:${participantId}:${index}`,
-        participantId,
-        task: "",
-        handoffToParticipantId: list[index + 1],
-        handoffWhen: "",
-      }));
-  const decisionState = describeHallDecisionCardState(selectedTaskCard, participants, language);
-  const compactSummaryText = selectedTaskCard.decision || selectedTaskCard.proposal || selectedTaskCard.latestSummary || selectedTaskCard.description || "";
-  const isExpanded = false;
-  const taskArtifacts = selectedTask?.artifacts ?? [];
-  const showPrimaryAction = decisionState.hasPendingStartablePlan && Boolean(decisionState.ownerLabel);
-  const primaryButtonLabel = decisionState.ownerLabel
-    ? (language === "zh"
-      ? `${pickUiText(language, "Start execution with", "开始执行（")}${decisionState.ownerLabel}${pickUiText(language, ")", "）")}`
-      : `${pickUiText(language, "Start execution", "Start execution")} · ${decisionState.ownerLabel}`)
-    : "";
-  const orderButtonLabel = pickUiText(
-    language,
-    selectedTaskCard.stage === "discussion" ? "Plan execution order" : "Adjust execution order",
-    selectedTaskCard.stage === "discussion" ? "安排后续顺序" : "调整执行顺序",
-  );
-  const summaryStats = [
-    `${pickUiText(language, "Stage", "阶段")}：${decisionState.stageText}`,
-    decisionState.ownerLabel ? `${decisionState.ownerHeading}：${decisionState.ownerLabel}` : "",
-    decisionState.stepText ? `${decisionState.stepHeading}：${decisionState.stepText}` : "",
-  ].filter(Boolean);
-  const actionItemMarkup = actionItems.length > 0
-    ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Action items", "行动项"))}</strong><span>${
-        actionItems.map((item, index) => {
-          const nextParticipantLabel = item.handoffToParticipantId ? participantLabel(item.handoffToParticipantId) : "";
-          const lines = [
-            `${index + 1}. ${participantLabel(item.participantId)}：${item.task || pickUiText(language, "Continue this execution step", "继续这一执行步骤")}`,
-          ];
-          if (nextParticipantLabel) lines.push(`${pickUiText(language, "Then hand off to", "然后交给")} @${nextParticipantLabel}`);
-          if (item.handoffWhen) lines.push(`${pickUiText(language, "When", "交接条件")}：${item.handoffWhen}`);
-          return escapeHtml(lines.join(" · "));
-        }).join("<br/>")
-      }</span></div>`
-    : "";
-  return (
-          `<section class="hall-decision-card ${isExpanded ? "is-expanded" : "is-collapsed"}" data-hall-current-console="initial">` +
-            `<div class="hall-decision-top">` +
-              `<div class="hall-decision-copy">` +
-                `<div class="hall-decision-label">${escapeHtml(pickUiText(language, "Discussion result", "讨论结论"))}</div>` +
-                `<div class="hall-decision-title-row">` +
-                  `<div class="hall-decision-inline-summary">${isExpanded ? renderMarkdown(compactSummaryText || selectedTaskCard.title || "") : escapeHtml((compactSummaryText || selectedTaskCard.title || "").replace(/\s+/g, " ").trim().slice(0, 120) + ((compactSummaryText || selectedTaskCard.title || "").length > 120 ? "…" : ""))}</div>` +
-                  `<button type="button" class="hall-secondary-button hall-secondary-button--compact hall-decision-toggle" onclick="return window.__openclawHallToggleDecisionDetails ? window.__openclawHallToggleDecisionDetails() : false">${escapeHtml(isExpanded ? pickUiText(language, "Hide details", "收起详情") : pickUiText(language, "Show details", "展开详情"))}</button>` +
-                `</div>` +
-                (isExpanded && summaryStats.length > 0
-                  ? `<div class="hall-decision-summary hall-decision-summary--compact">${summaryStats
-                    .map((item) => `<span class="hall-decision-meta-line-item" title="${escapeHtml(item)}">${escapeHtml(item)}</span>`)
-                    .join("<span class=\"hall-decision-meta-sep\">·</span>")}</div>`
-                  : "") +
-              `</div>` +
-            `</div>` +
-            (isExpanded ? (
-              `<div class="hall-decision-body">` +
-                `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Thread", "线程"))}</strong><span title="${escapeHtml(selectedTaskCard.title || "")}">${escapeHtml(selectedTaskCard.title || "-")}</span></div>` +
-                (selectedTaskCard.decision ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Decision", "决策"))}</strong><span class="hall-decision-value">${renderMarkdown(selectedTaskCard.decision)}</span></div>` : "") +
-                (selectedTaskCard.doneWhen ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Done when", "完成标准"))}</strong><span title="${escapeHtml(selectedTaskCard.doneWhen)}">${escapeHtml(selectedTaskCard.doneWhen)}</span></div>` : "") +
-                (queueLabels.length > 0 ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Execution order", "执行顺序"))}</strong><span>${escapeHtml(queueLabels.join(" → "))}</span></div>` : "") +
-                actionItemMarkup +
-                (taskArtifacts.length > 0 ? `<div class="hall-decision-row"><strong>${escapeHtml(pickUiText(language, "Artifacts", "产物"))}</strong><div class="hall-artifact-list">${renderArtifactChips(taskArtifacts)}</div></div>` : "") +
-              `</div>`
-            ) : "") +
-            `<div class="hall-decision-actions">` +
-              (showPrimaryAction ? `<button type="button" class="hall-button" data-hall-start-execution onclick="return window.__openclawHallAssignOwner ? window.__openclawHallAssignOwner() : false">${escapeHtml(primaryButtonLabel)}</button>` : "") +
-              `<button type="button" class="hall-secondary-button hall-secondary-button--accent" data-hall-plan-order onclick="return window.__openclawHallSetExecutionOrder ? window.__openclawHallSetExecutionOrder() : false">${escapeHtml(orderButtonLabel)}</button>` +
-              `<button type="button" class="hall-secondary-button" data-hall-continue-discussion onclick="return window.__openclawHallContinueDiscussion ? window.__openclawHallContinueDiscussion() : false">${escapeHtml(pickUiText(language, "Continue discussion", "继续讨论"))}</button>` +
-            `</div>` +
-            `<div class="hall-decision-helper">${escapeHtml(decisionState.hasPendingStartablePlan
-              ? (decisionState.ownerLabel
-                ? pickUiText(language, "Order first, then start. Handoffs stay in this thread.", "先排顺序，再开始执行。交接会继续写回这条线程。")
-                : pickUiText(language, "Plan the order first, then start the first owner here.", "先安排顺序，再从这里开始第一位。"))
-              : pickUiText(language, "Stay in this thread for updates, handoffs, and review.", "留在这条线程里看更新、交接和审核。"))}</div>` +
-          `</section>`
-  );
-}
-
 function renderMentionChips(participants: HallParticipant[], language: UiLanguage): string {
   return participants
     .map((participant) => `
@@ -3172,14 +3014,13 @@ function renderParticipantMiniList(participants: HallParticipant[], language: Ui
     .join("");
 }
 
-function renderParticipantRoster(participants: HallParticipant[], language: UiLanguage): string {
+function renderParticipantRoster(participants: HallParticipant[], _language: UiLanguage): string {
   return participants
     .map((participant) => `
       <div class="hall-roster-item">
         ${renderHallPixelAvatar(participant.displayName, "hall-roster-avatar")}
         <span class="hall-roster-copy">
           <strong>${escapeHtml(participant.displayName)}</strong>
-          <span>${escapeHtml(roleLabel(participant.semanticRole, language))}</span>
         </span>
       </div>
     `)

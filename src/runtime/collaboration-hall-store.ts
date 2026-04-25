@@ -110,6 +110,9 @@ export interface UpdateHallTaskCardInput {
   latestSummary?: string | null;
   discussionCycle?: HallTaskCard["discussionCycle"] | null;
   executionLock?: HallTaskCard["executionLock"] | null;
+  executionLocks?: HallTaskCard["executionLocks"];
+  activeOwnerParticipantIds?: string[] | null;
+  parallelGroupIndex?: number | null;
   sessionKeys?: string[];
   archivedAt?: string | null;
   archivedByParticipantId?: string | null;
@@ -397,6 +400,13 @@ export async function updateHallTaskCard(input: UpdateHallTaskCardInput): Promis
   if (payload.latestSummary !== undefined) taskCard.latestSummary = payload.latestSummary ?? undefined;
   if (payload.discussionCycle !== undefined) taskCard.discussionCycle = payload.discussionCycle ?? undefined;
   if (payload.executionLock !== undefined) taskCard.executionLock = payload.executionLock ?? undefined;
+  if (payload.executionLocks !== undefined) taskCard.executionLocks = payload.executionLocks;
+  if (payload.activeOwnerParticipantIds !== undefined) {
+    taskCard.activeOwnerParticipantIds = payload.activeOwnerParticipantIds ?? undefined;
+  }
+  if (payload.parallelGroupIndex !== undefined) {
+    taskCard.parallelGroupIndex = payload.parallelGroupIndex ?? undefined;
+  }
   if (payload.sessionKeys !== undefined) taskCard.sessionKeys = payload.sessionKeys;
   if (payload.archivedAt !== undefined) taskCard.archivedAt = payload.archivedAt ?? undefined;
   if (payload.archivedByParticipantId !== undefined) {
